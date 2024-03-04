@@ -25,7 +25,7 @@
 #include <util/exceptions/parse_error.h>
 
 namespace aaltitoad::hawk {
-    auto scoped_template_builder::add_template(const model::tta_template& t) -> scoped_template_builder& {
+    auto scoped_template_builder::add_template(const tta_template& t) -> scoped_template_builder& {
         templates[t.name] = t;
         return *this;
     }
@@ -35,7 +35,7 @@ namespace aaltitoad::hawk {
         return *this;
     }
 
-    auto scoped_template_builder::get_invocation_parameters(const model::tta_instance_t& instance) -> std::vector<std::string> {
+    auto scoped_template_builder::get_invocation_parameters(const tta_instance_t& instance) -> std::vector<std::string> {
         std::vector<std::string> result{};
         std::smatch match;
         if (std::regex_search(instance.tta_template_name.cbegin(), instance.tta_template_name.cend(), match, param_section)) {
@@ -50,7 +50,7 @@ namespace aaltitoad::hawk {
         return result;
     }
 
-    auto scoped_template_builder::get_invocation_arguments(const model::tta_instance_t& instance, scoped_interpreter& interpreter) -> std::vector<expr::symbol_value_t> {
+    auto scoped_template_builder::get_invocation_arguments(const tta_instance_t& instance, scoped_interpreter& interpreter) -> std::vector<expr::symbol_value_t> {
         std::vector<expr::symbol_value_t> result{};
         std::smatch match;
         if (std::regex_search(instance.invocation.cbegin(), instance.invocation.cend(), match, param_section)) {
@@ -61,7 +61,7 @@ namespace aaltitoad::hawk {
         return result;
     }
 
-    auto scoped_template_builder::construct_interpreter_from_scope(const model::tta_instance_t& instance, const std::string& scoped_name) -> scoped_interpreter {
+    auto scoped_template_builder::construct_interpreter_from_scope(const tta_instance_t& instance, const std::string& scoped_name) -> scoped_interpreter {
         // Interpret arguments and check for matching parameters
         scoped_interpreter interpreter{{internal_symbols, external_symbols}, scoped_name + "."};
         auto parameters = get_invocation_parameters(instance);
@@ -78,7 +78,7 @@ namespace aaltitoad::hawk {
         return interpreter;
     }
 
-    void scoped_template_builder::parse_declarations_recursively(const model::tta_instance_t& instance, const std::string& parent_name) { // NOLINT(misc-no-recursion)
+    void scoped_template_builder::parse_declarations_recursively(const tta_instance_t& instance, const std::string& parent_name) { // NOLINT(misc-no-recursion)
         auto scoped_name = (parent_name.empty() ? parent_name : parent_name + ".") + instance.invocation;
         spdlog::trace("{0}: parsing declarations", scoped_name);
         try {
@@ -103,7 +103,7 @@ namespace aaltitoad::hawk {
         }
     }
 
-    void scoped_template_builder::instantiate_tta_recursively(const model::tta_instance_t& instance, const std::string& parent_name, ntta_builder& network_builder) { // NOLINT(misc-no-recursion)
+    void scoped_template_builder::instantiate_tta_recursively(const tta_instance_t& instance, const std::string& parent_name, ntta_builder& network_builder) { // NOLINT(misc-no-recursion)
         auto scoped_name = (parent_name.empty() ? parent_name : parent_name + ".") + instance.invocation;
         spdlog::trace("{0}: instantiating", scoped_name);
         try {
@@ -162,7 +162,7 @@ namespace aaltitoad::hawk {
         if(main_it == templates.end())
             throw parse_error("no main template");
         throw_if_infinite_recursion_in_dependencies();
-        model::tta_instance_t t{.id=main_it->first,
+        tta_instance_t t{.id=main_it->first,
                                 .tta_template_name=main_it->first,
                                 .invocation=main_it->first};
         spdlog::trace("building ntta from main component: '{0}'", main_it->second.name);
@@ -222,7 +222,7 @@ namespace aaltitoad::hawk {
         throw parse_error("cannot instantiate network due to infinitely recursive instantiation, set verbosity to info or higher for detailed information");
     }
 
-    auto scoped_template_builder::add_global_symbols(const std::vector<model::part_t>& parts) -> scoped_template_builder& {
+    auto scoped_template_builder::add_global_symbols(const std::vector<part_t>& parts) -> scoped_template_builder& {
         std::stringstream ss{};
         for(auto& p : parts)
             ss << p.id << " := " << p.value << ";";

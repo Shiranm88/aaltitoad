@@ -69,7 +69,7 @@ namespace aaltitoad::plugins {
                             break;
                         }
                         case plugin_type::parser: {
-                            auto load = load_symbol<parser_func_t>(handle, "load");
+                            auto load = load_symbol<parser_ctor_t>(handle, "create_parser");
                             loaded_plugins.insert(std::make_pair<>(stem, plugin_t{type, version, load}));
                             break;
                         }

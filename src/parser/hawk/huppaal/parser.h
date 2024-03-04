@@ -17,15 +17,24 @@
  */
 #ifndef AALTITOAD_HAWK_PARSER_H
 #define AALTITOAD_HAWK_PARSER_H
-#include "plugin_system/plugin_system.h"
-#include "ntta/builder/ntta_builder.h"
+#include "lsp.pb.h"
+#include "plugin_system/parser.h"
 #include <nlohmann/json.hpp>
 
-namespace aaltitoad::hawk {
-    auto should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) -> bool;
-    auto should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) -> bool;
-    auto load_part(const nlohmann::json& json_file) -> std::string;
-    auto load(const std::vector<std::string>& filepaths, const std::vector<std::string> &ignore_list) -> aaltitoad::ntta_t*;
+namespace aaltitoad::hawk::huppaal {
+    auto create_parser() -> plugin::parser*;
+
+    class parser : public plugin::parser {
+    public:
+        parser();
+        ~parser() override = default;
+        auto parse_files(const std::vector<std::string>& filepaths, const std::vector<std::string> &ignore_list) -> std::unique_ptr<ntta_t> override;
+        auto parse_model(const Buffer& buffer) -> std::unique_ptr<ntta_t>  override;
+    private:
+        auto should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) -> bool;
+        auto should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) -> bool;
+        auto load_part(const nlohmann::json& json_file) -> std::string;
+    };
 }
 
 #endif //AALTITOAD_HAWK_PARSER_H

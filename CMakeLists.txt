@@ -14,7 +14,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 cmake_minimum_required(VERSION 3.16) # 3.16+ because of target_precompiled_header
-project(aaltitoad VERSION 1.2.1)
+project(aaltitoad VERSION 1.2.2)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CXX_STANDARD_REQUIRED ON)
@@ -36,6 +36,7 @@ add_compile_definitions(DEFAULT_EXPRESSION_VALUE="true")
 CPMAddPackage(NAME expr VERSION 3.0.0 GITHUB_REPOSITORY sillydan1/expr OPTIONS "ENABLE_Z3 ON")
 CPMAddPackage("gh:sillydan1/argvparse@1.2.3")
 CPMAddPackage("gh:sillydan1/ctl-expr@2.0.0")
+CPMAddPackage("gh:sillydan1/graphedit-protobuf@1.2.1")
 
 CPMAddPackage("gh:yalibs/yatimer@1.0.0")
 CPMAddPackage("gh:yalibs/yaoverload@1.0.0")
@@ -71,7 +72,7 @@ if(${CODE_COVERAGE})
     target_link_options(${PROJECT_NAME} PUBLIC --coverage)
     target_compile_options(${PROJECT_NAME} PUBLIC --coverage)
 endif()
-target_link_libraries(${PROJECT_NAME} PUBLIC expr_lang dl pthread ctl_lang)
+target_link_libraries(${PROJECT_NAME} PUBLIC expr_lang dl pthread ctl_lang graphedit_proto)
 target_include_directories(${PROJECT_NAME} PUBLIC
         ${CMAKE_BINARY_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}
@@ -88,6 +89,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         ${expr_BUILD_DIR}
         ${optionparser_SOURCE_DIR}/src
         ${magic_enum_SOURCE_DIR}/include
+        ${graphedit-protobuf_BINARY_DIR}/src/main/proto
 
         ${yatimer_SOURCE_DIR}/include
         ${yaoverload_SOURCE_DIR}/include
@@ -123,7 +125,18 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 else()
     message(WARNING "unknown system ${CMAKE_SYSTEM_NAME}")
 endif()
-install(DIRECTORY src/ntta src/plugin_system src/util src/verification src/parser DESTINATION include FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY
+    src/ntta
+    src/plugin_system
+    src/util
+    src/verification
+    src/parser
+    ${graphedit-protobuf_BINARY_DIR}/src/main/proto
+    DESTINATION
+    include
+    FILES_MATCHING PATTERN
+    "*.h"
+)
 
 if(NOT WIN32)
     target_precompile_headers(${PROJECT_NAME} PUBLIC src/aaltitoadpch.h)

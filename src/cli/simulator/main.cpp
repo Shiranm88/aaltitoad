@@ -15,18 +15,17 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#include "../cli_common.h"
+#include "cli_options.h"
 #include <aaltitoadpch.h>
 #include <config.h>
-#include "cli_options.h"
-#include "../cli_common.h"
-#include <timer>
-#include <plugin_system/plugin_system.h>
-#include <numeric>
 #include <ntta/interesting_tocker.h>
+#include <plugin_system/plugin_system.h>
+#include <timer>
 
 void parse_and_execute_simulator(std::map<std::string, argument_t>& cli_arguments);
 auto load_plugins(std::map<std::string, argument_t>& cli_arguments) -> plugin_map_t;
-auto instantiate_tocker(const std::string& arg, const plugin_map_t& available_plugins, const aaltitoad::ntta_t& automata) -> std::optional<aaltitoad::tocker_t*>;
+auto instantiate_tocker(const std::string& arg, const plugin_map_t& available_plugins, const aaltitoad::ntta_t& automata) -> std::optional<std::unique_ptr<aaltitoad::tocker_t>>;
 
 int main(int argc, char** argv) {
     auto options = get_options();
@@ -62,7 +61,7 @@ void parse_and_execute_simulator(std::map<std::string, argument_t>& cli_argument
     auto ignore_list = cli_arguments["ignore"].as_list_or_default({});
 
     /// Get the parser
-    auto selected_parser = cli_arguments["parser"].as_string_or_default("hawk_parser");
+    auto selected_parser = cli_arguments["parser"].as_string_or_default("huppaal_parser");
     if(!available_plugins.contains(selected_parser) || available_plugins.at(selected_parser).type != plugin_type::parser) {
         spdlog::error("no such parser available: '{0}'", selected_parser);
         return;
@@ -70,16 +69,16 @@ void parse_and_execute_simulator(std::map<std::string, argument_t>& cli_argument
 
     /// Parse provided model
     spdlog::trace("parsing with {0} plugin", selected_parser);
-    auto parser = std::get<parser_func_t>(available_plugins.at(selected_parser).function);
+    auto parser = std::get<parser_ctor_t>(available_plugins.at(selected_parser).function)();
     ya::timer<unsigned int> t{};
-    auto automata = std::unique_ptr<aaltitoad::ntta_t>(parser(cli_arguments["input"].as_list(), ignore_list));
+    auto automata = parser->parse_files(cli_arguments["input"].as_list(), ignore_list);
     spdlog::trace("model parsing took {0}ms", t.milliseconds_elapsed());
 
     /// Inject tockers - CLI Format: "name(argument)"
     for(auto& arg : cli_arguments["tocker"].as_list_or_default({})) {
         auto tocker = instantiate_tocker(arg, available_plugins, *automata);
         if(tocker.has_value())
-            automata->tockers.emplace_back(tocker.value());
+            automata->tockers.emplace_back(std::move(tocker.value()));
     }
 
     /// Run
@@ -121,7 +120,7 @@ auto load_plugins(std::map<std::string, argument_t>& cli_arguments) -> plugin_ma
     return aaltitoad::plugins::load(look_dirs);
 }
 
-auto instantiate_tocker(const std::string& arg, const plugin_map_t& available_plugins, const aaltitoad::ntta_t& automata) -> std::optional<aaltitoad::tocker_t*> {
+auto instantiate_tocker(const std::string& arg, const plugin_map_t& available_plugins, const aaltitoad::ntta_t& automata) -> std::optional<std::unique_ptr<aaltitoad::tocker_t>> {
     try {
         auto s = split(arg, "(");
         if(s.size() < 2) {
@@ -137,7 +136,7 @@ auto instantiate_tocker(const std::string& arg, const plugin_map_t& available_pl
             return {};
         }
         auto tocker_ctor = std::get<tocker_ctor_t>(available_plugins.at(s[0]).function);
-        return tocker_ctor(s[1].substr(0, s[1].size() - 1), automata);
+        return std::unique_ptr<aaltitoad::tocker_t>(tocker_ctor(s[1].substr(0, s[1].size() - 1), automata));
     } catch (std::exception& e) {
         spdlog::error("tocker instantiation failed: {0}", e.what());
         return {};

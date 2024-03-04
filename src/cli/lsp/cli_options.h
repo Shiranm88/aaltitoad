@@ -21,9 +21,11 @@
 
 inline std::vector<option_t> get_options() {
     return {
-            {"version",   'V', argument_requirement::NO_ARG,       "Print version and exit"},
-            {"verbosity", 'v', argument_requirement::REQUIRE_ARG,  "Set verbosity level (6 for max verbosity)"},
-            {"port",      'p', argument_requirement::REQUIRE_ARG,  "Set language server port (default 5001)"},
+            {"version",     'V', argument_requirement::NO_ARG,       "Print version and exit"},
+            {"verbosity",   'v', argument_requirement::REQUIRE_ARG,  "Set verbosity level (6 for max verbosity)"},
+            {"port",        'p', argument_requirement::REQUIRE_ARG,  "Set language server port (default 5001)"},
+            {"list-plugins",'L', argument_requirement::NO_ARG,       "List found plugins and exit"},
+            {"parser",      'P', argument_requirement::REQUIRE_ARG,  "Specify the parser to use"},
     };
 }
 

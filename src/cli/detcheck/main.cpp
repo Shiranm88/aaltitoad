@@ -15,13 +15,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include <cli/cli_common.h>
-#include <plugin_system/plugin_system.h>
-#include <aaltitoadpch.h>
-#include <timer>
-#include <nlohmann/json.hpp>
-#include "cli_options.h"
+#include "cli/simulator/cli_options.h"
 #include "expr-wrappers/interpreter.h"
+#include <aaltitoadpch.h>
+#include <cli/cli_common.h>
+#include <nlohmann/json.hpp>
+#include <plugin_system/plugin_system.h>
+#include <timer>
 
 auto get_ntta(std::map<std::string, argument_t>& cli_arguments) -> std::unique_ptr<aaltitoad::ntta_t>;
 auto load_plugins(std::map<std::string, argument_t>& cli_arguments) -> plugin_map_t;
@@ -60,15 +60,15 @@ auto get_ntta(std::map<std::string, argument_t>& cli_arguments) -> std::unique_p
     auto ignore_list = cli_arguments["ignore"].as_list_or_default({});
 
     /// Get the parser
-    auto selected_parser = cli_arguments["parser"].as_string_or_default("hawk_parser");
+    auto selected_parser = cli_arguments["parser"].as_string_or_default("huppaal_parser");
     if(!available_plugins.contains(selected_parser) || available_plugins.at(selected_parser).type != plugin_type::parser)
         throw std::logic_error("no such parser available: " + selected_parser);
 
     /// Parse provided model
     spdlog::trace("parsing with {0} plugin", selected_parser);
-    auto parser = std::get<parser_func_t>(available_plugins.at(selected_parser).function);
+    auto parser = std::get<parser_ctor_t>(available_plugins.at(selected_parser).function)();
     ya::timer<unsigned int> t{};
-    auto automata = std::unique_ptr<aaltitoad::ntta_t>(parser(cli_arguments["input"].as_list(), ignore_list));
+    auto automata = std::unique_ptr<aaltitoad::ntta_t>(parser->parse_files(cli_arguments["input"].as_list(), ignore_list));
     spdlog::trace("model parsing took {0}ms", t.milliseconds_elapsed());
     return automata;
 }

@@ -15,20 +15,17 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "cli/lsp/model.h"
 #include "lsp.pb.h"
 #include "lsp_server.h"
-#include <exception>
 #include <future>
 #include <grpc/support/log.h>
 #include <grpcpp/support/status.h>
 #include <spdlog/spdlog.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <variant>
 
 namespace aaltitoad::lsp::proto {
-    LanguageServerImpl::LanguageServerImpl(int port, const std::string& semver) : running{false}, port{port}, semver{semver}, diagnostics_callback{}, notifications_callback{}, progress_callback{} {
+    LanguageServerImpl::LanguageServerImpl(int port, const std::string& semver, plugin::parser& parser) : running{false}, port{port}, semver{semver}, diagnostics_callback{}, notifications_callback{}, progress_callback{}, parser{parser} {
 
     }
 
@@ -49,14 +46,12 @@ namespace aaltitoad::lsp::proto {
     }
 
     auto LanguageServerImpl::GetServerInfo(grpc::ServerContext* server_context, const Empty* empty, ServerInfo* result) -> grpc::Status {
-        result->set_name("aaltitoad-ls");
+        result->set_name("aaltitoad-lsp");
         result->set_language("hawk");
         result->set_semanticversion(semver);
-        result->add_capabilities(Capability::CAPABILITY_DIFFS);
         result->add_capabilities(Capability::CAPABILITY_PROGRESS);
         result->add_capabilities(Capability::CAPABILITY_DIAGNOSTICS);
         result->add_capabilities(Capability::CAPABILITY_NOTIFICATIONS);
-        // TODO: add CAPABILITY_PROJECT when you've implemented it
         return grpc::Status::OK;
     }
 
@@ -66,49 +61,25 @@ namespace aaltitoad::lsp::proto {
     }
 
     auto LanguageServerImpl::BufferCreated(grpc::ServerContext* server_context, const Buffer* buffer, Empty* result) -> grpc::Status {
+        progress_start("compiling buffer: " + buffer->path());
+        auto new_ntta = parser.parse_model(*buffer); // TODO: do something with this...
+        progress_end("success");
         return grpc::Status::OK;
     }
 
     auto LanguageServerImpl::BufferDeleted(grpc::ServerContext* server_context, const Buffer* buffer, Empty* result) -> grpc::Status {
+        notify_info("buffer was closed: " + buffer->path());
+        return grpc::Status::OK;
+    }
+
+    auto LanguageServerImpl::HandleChange(grpc::ServerContext* server_context, const Buffer* buffer, Empty* result) -> grpc::Status {
+        notify_info("change was received");
         return grpc::Status::OK;
     }
 
     auto LanguageServerImpl::HandleDiff(grpc::ServerContext* server_context, const Diff* diff, Empty* result) -> grpc::Status {
-        try {
-            // NOTE: BOOKMARK: You're converting to model objects, so you can feed them into the builder, so you can get compiler errors
-            progress_start("diff for '" + diff->buffername() + "' received");
-            if(!network.components.contains(diff->buffername())) {
-                network.components[diff->buffername()] = tta_t{};
-                progress(diff->buffername() + " opened");
-            }
-            for(auto x : diff->vertexadditions()) {
-                auto json = nlohmann::json::parse(x.jsonencoding());
-                lsp::vertex_t vert{};
-                lsp::from_json(json, vert);
-                notify_info(x.id());
-                std::visit(ya::overload(
-                    [this](const lsp::nail_t& n){ notify_info("nail expression: " + n.expression); },
-                    [this](const lsp::location_t& l){ notify_info("location nickname: " + l.nickname); }
-                ), static_cast<const lsp::vertex_t&>(vert));
-            }
-            for(auto x : diff->edgeadditions()) {
-                auto json = nlohmann::json::parse(x.jsonencoding());
-            }
-            for(auto x : diff->vertexdeletions()) {
-                auto json = nlohmann::json::parse(x.jsonencoding());
-            }
-            for(auto x : diff->edgedeletions()) {
-                auto json = nlohmann::json::parse(x.jsonencoding());
-            }
-            progress_end("done");
-            return grpc::Status::OK;
-        } catch(const std::exception& e) {
-            spdlog::error("something went wrong: {}", e.what());
-            return grpc::Status(grpc::StatusCode::INTERNAL, e.what());
-        } catch(...) {
-            spdlog::error("unknown error");
-            return grpc::Status(grpc::StatusCode::INTERNAL, "unknown error");
-        }
+        notify_info("diffs are not supported by this language server");
+        return grpc::Status::OK;
     }
 
     auto LanguageServerImpl::GetDiagnostics(grpc::ServerContext* server_context, const Empty* empty, grpc::ServerWriter<DiagnosticsList>* writer) -> grpc::Status {
@@ -149,6 +120,7 @@ namespace aaltitoad::lsp::proto {
     }
 
     void LanguageServerImpl::progress(const ProgressReportType& type, const std::string& message) {
+        spdlog::trace("progress: '{}'", message);
         if(!progress_callback.has_value())
             return;
         ProgressReport result{};
@@ -186,5 +158,14 @@ namespace aaltitoad::lsp::proto {
         result.set_level(level);
         result.set_message(message);
         notifications_callback.value()(result);
+    }
+
+    void LanguageServerImpl::diagnostic(const Severity& severity, const std::string& title, const std::string& message) {
+        if(!diagnostics_callback.has_value())
+            return;
+        Diagnostic diag{};
+        diag.set_severity(severity);
+        diag.set_title(title);
+        diag.set_message(message);
     }
 }

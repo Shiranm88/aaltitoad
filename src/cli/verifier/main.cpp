@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
             return 0;
         }
 
-        auto selected_parser = cli_arguments["parser"].as_string_or_default("hawk_parser");
+        auto selected_parser = cli_arguments["parser"].as_string_or_default("huppaal_parser");
         if(!available_plugins.contains(selected_parser) || available_plugins.at(selected_parser).type != plugin_type::parser) {
             spdlog::critical("no such parser available: '{0}'", selected_parser);
             return 1;
@@ -71,9 +71,9 @@ int main(int argc, char** argv) {
         spdlog::debug("parsing with {0} plugin", selected_parser);
         auto inputs = cli_arguments["input"].as_list();
         auto ignore = cli_arguments["ignore"].as_list_or_default({});
-        auto parser = std::get<parser_func_t>(available_plugins.at(selected_parser).function);
+        auto parser = std::get<parser_ctor_t>(available_plugins.at(selected_parser).function)();
         ya::timer<int> t{};
-        std::unique_ptr<aaltitoad::ntta_t> n{parser(inputs, ignore)};
+        std::unique_ptr<aaltitoad::ntta_t> n{parser->parse_files(inputs, ignore)};
         trace_log_ntta(*n);
         spdlog::debug("model parsing took {0}ms", t.milliseconds_elapsed());
 
