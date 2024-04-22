@@ -20,6 +20,12 @@ namespace aaltitoad::hawk::graphedit {
         invalid=-1,
     };
 
+    enum class edge_type_t {
+        normal=0,
+        box_edge,
+        invalid=-1,
+    };
+
     struct location_t {
         location_type_t type;
         std::string nickname;
@@ -38,6 +44,7 @@ namespace aaltitoad::hawk::graphedit {
     using vertex_t = std::variant<location_t, nail_t, instantiation_t>;
 
     struct edge_t {
+        edge_type_t type;
         std::string source;
         std::string target;
     };

@@ -5,11 +5,16 @@
 #include <memory>
 
 namespace aaltitoad::plugin {
+    struct parse_result {
+        std::vector<Diagnostic> diagnostics;
+        std::optional<std::unique_ptr<ntta_t>> result;
+    };
+
     class parser {
     public:
         virtual ~parser() = default;
-        virtual std::unique_ptr<ntta_t> parse_files(const std::vector<std::string>& files, const std::vector<std::string>& ignore_patterns) = 0;
-        virtual std::unique_ptr<ntta_t> parse_model(const Buffer& buffer) = 0;
+        virtual auto parse_files(const std::vector<std::string>& files, const std::vector<std::string>& ignore_patterns) -> parse_result = 0 ;
+        virtual auto parse_model(const Buffer& buffer) -> parse_result = 0;
     };
 }
 

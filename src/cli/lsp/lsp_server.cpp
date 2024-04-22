@@ -25,7 +25,7 @@
 #include <unistd.h>
 
 namespace aaltitoad::lsp::proto {
-    LanguageServerImpl::LanguageServerImpl(int port, const std::string& semver, plugin::parser& parser) : running{false}, port{port}, semver{semver}, diagnostics_callback{}, notifications_callback{}, progress_callback{}, parser{parser} {
+    LanguageServerImpl::LanguageServerImpl(int port, const std::string& semver, const std::shared_ptr<plugin::parser>& parser) : running{false}, port{port}, semver{semver}, diagnostics_callback{}, notifications_callback{}, progress_callback{}, parser{parser} {
 
     }
 
@@ -61,43 +61,77 @@ namespace aaltitoad::lsp::proto {
     }
 
     auto LanguageServerImpl::BufferCreated(grpc::ServerContext* server_context, const Buffer* buffer, Empty* result) -> grpc::Status {
-        progress_start("compiling buffer: " + buffer->path());
-        auto new_ntta = parser.parse_model(*buffer); // TODO: do something with this...
-        progress_end("success");
+        try {
+            progress_start("compiling buffer: " + buffer->path());
+            auto new_ntta = parser->parse_model(*buffer);
+            diagnostic(new_ntta.diagnostics);
+            if(new_ntta.result.has_value())
+                progress_end("success");
+            else
+                progress_end_fail("parser error");
+        } catch(std::exception& e) {
+            spdlog::error("error: {}", e.what());
+            notify_error(e.what());
+            progress_end_fail(std::string("error: ") + e.what());
+        }
         return grpc::Status::OK;
     }
 
     auto LanguageServerImpl::BufferDeleted(grpc::ServerContext* server_context, const Buffer* buffer, Empty* result) -> grpc::Status {
-        notify_info("buffer was closed: " + buffer->path());
+        notify_trace("buffer was closed: " + buffer->path());
         return grpc::Status::OK;
     }
 
     auto LanguageServerImpl::HandleChange(grpc::ServerContext* server_context, const Buffer* buffer, Empty* result) -> grpc::Status {
-        notify_info("change was received");
+        try {
+            progress_start("compiling buffer: " + buffer->path());
+            auto new_ntta = parser->parse_model(*buffer);
+            diagnostic(new_ntta.diagnostics);
+            if(new_ntta.result.has_value())
+                progress_end("success");
+            else
+                progress_end_fail("parser error");
+        } catch(std::exception& e) {
+            spdlog::error("error: {}", e.what());
+            notify_error(e.what());
+            progress_end_fail(std::string("error: ") + e.what());
+        }
         return grpc::Status::OK;
     }
 
     auto LanguageServerImpl::HandleDiff(grpc::ServerContext* server_context, const Diff* diff, Empty* result) -> grpc::Status {
-        notify_info("diffs are not supported by this language server");
+        notify_warning("diffs are not supported by this language server");
         return grpc::Status::OK;
     }
 
     auto LanguageServerImpl::GetDiagnostics(grpc::ServerContext* server_context, const Empty* empty, grpc::ServerWriter<DiagnosticsList>* writer) -> grpc::Status {
-        diagnostics_callback = [&writer](const DiagnosticsList& d){ writer->Write(d); };
+        diagnostics_callback = [&writer, this](const DiagnosticsList& d){
+            write_mutex.lock();
+            writer->Write(d);
+            write_mutex.unlock();
+        };
         // NOTE: we now sleep forever, because we dont want to actually exit this call ever
         std::promise<void>().get_future().wait();
         return grpc::Status::OK;
     }
 
     auto LanguageServerImpl::GetNotifications(grpc::ServerContext* server_context, const Empty* empty, grpc::ServerWriter<Notification>* writer) -> grpc::Status {
-        notifications_callback = [&writer](const Notification& n){ writer->Write(n); };
+        notifications_callback = [&writer, this](const Notification& n){ 
+            write_mutex.lock();
+            writer->Write(n);
+            write_mutex.unlock();
+        };
         // NOTE: we now sleep forever, because we dont want to actually exit this call ever
         std::promise<void>().get_future().wait();
         return grpc::Status::OK;
     }
 
     auto LanguageServerImpl::GetProgress(grpc::ServerContext* server_context, const Empty* empty, grpc::ServerWriter<ProgressReport>* writer) -> grpc::Status {
-        progress_callback = [&writer](const ProgressReport& p){ writer->Write(p); };
+        progress_callback = [&writer, this](const ProgressReport& p){
+            write_mutex.lock();
+            writer->Write(p);
+            write_mutex.unlock();
+        };
         // NOTE: we now sleep forever, because we dont want to actually exit this call ever
         std::promise<void>().get_future().wait();
         return grpc::Status::OK;
@@ -160,12 +194,19 @@ namespace aaltitoad::lsp::proto {
         notifications_callback.value()(result);
     }
 
-    void LanguageServerImpl::diagnostic(const Severity& severity, const std::string& title, const std::string& message) {
+    void LanguageServerImpl::diagnostic(const std::vector<Diagnostic>& diags) {
+        notify_trace("diagnostics: " + std::to_string(diags.size()));
         if(!diagnostics_callback.has_value())
             return;
-        Diagnostic diag{};
-        diag.set_severity(severity);
-        diag.set_title(title);
-        diag.set_message(message);
+        DiagnosticsList l{};
+        for(auto& diag : diags) {
+            l.add_diagnostics()->CopyFrom(diag);
+            std::stringstream ss{};
+            ss << diag.message() << ": ";
+            for(auto& elem : diag.affectedelements())
+                ss << "[elem](" << elem << ")";
+            notify_trace(ss.str());
+        }
+        diagnostics_callback.value()(l); 
     }
 }

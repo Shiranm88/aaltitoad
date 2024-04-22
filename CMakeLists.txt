@@ -33,9 +33,9 @@ find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
 add_compile_definitions(DEFAULT_EXPRESSION_VALUE="true")
-CPMAddPackage(NAME expr VERSION 3.0.0 GITHUB_REPOSITORY sillydan1/expr OPTIONS "ENABLE_Z3 ON")
+CPMAddPackage(NAME expr VERSION 3.0.3 GITHUB_REPOSITORY sillydan1/expr OPTIONS "ENABLE_Z3 ON")
 CPMAddPackage("gh:sillydan1/argvparse@1.2.3")
-CPMAddPackage("gh:sillydan1/ctl-expr@2.0.0")
+CPMAddPackage("gh:sillydan1/ctl-expr@2.0.2")
 CPMAddPackage("gh:sillydan1/graphedit-protobuf@1.2.1")
 
 CPMAddPackage("gh:yalibs/yatimer@1.0.0")

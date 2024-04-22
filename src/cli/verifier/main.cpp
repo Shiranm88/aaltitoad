@@ -73,7 +73,14 @@ int main(int argc, char** argv) {
         auto ignore = cli_arguments["ignore"].as_list_or_default({});
         auto parser = std::get<parser_ctor_t>(available_plugins.at(selected_parser).function)();
         ya::timer<int> t{};
-        std::unique_ptr<aaltitoad::ntta_t> n{parser->parse_files(inputs, ignore)};
+        auto parse_result = parser->parse_files(inputs, ignore);
+        for(auto& diagnostic : parse_result.diagnostics)
+            aaltitoad::warnings::print_diagnostic(diagnostic);
+        if(!parse_result.result.has_value()) {
+            spdlog::error("compilation failed");
+            return 1;
+        }
+        auto n = std::move(parse_result.result.value());
         trace_log_ntta(*n);
         spdlog::debug("model parsing took {0}ms", t.milliseconds_elapsed());
 

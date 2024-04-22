@@ -131,6 +131,22 @@ auto lower_case(const std::string& s) -> std::string {
     return r;
 }
 
+void kebab_case(std::string& s) {
+    // NOTE: does not account for camelCased or PascalCased strings
+    for (auto& i : s) {
+        if(i == ' ')
+            i = '-';
+        if(i == '_')
+            i = '-';
+    }
+}
+
+auto kebab_case(const std::string& s) -> std::string {
+    auto r = s;
+    kebab_case(r);
+    return r;
+}
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wvarargs"
 std::string string_format(const std::string &fmt, ...) {

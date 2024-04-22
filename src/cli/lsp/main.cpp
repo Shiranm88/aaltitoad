@@ -34,6 +34,7 @@ void siginthandler(int param) {
 int main(int argc, char** argv) {
     signal(SIGINT, siginthandler);
     auto options = get_options();
+    // TODO: add option to control grpc verbosity: gpr_set_log_verbosity(gpr_log_severity::GPR_LOG_SEVERITY_DEBUG);
     auto cli_arguments = get_arguments(options, argc, argv);
     if(cli_arguments["verbosity"])
         spdlog::set_level(static_cast<spdlog::level::level_enum>(SPDLOG_LEVEL_OFF - cli_arguments["verbosity"].as_integer()));
@@ -61,12 +62,12 @@ int main(int argc, char** argv) {
     }
 
     spdlog::trace("building parser {}", selected_parser);
-    auto parser = std::get<parser_ctor_t>(available_plugins.at(selected_parser).function)();
+    std::shared_ptr<aaltitoad::plugin::parser> parser{std::get<parser_ctor_t>(available_plugins.at(selected_parser).function)()};
     spdlog::trace("starting language server...");
     aaltitoad::lsp::proto::LanguageServerImpl{
         cli_arguments["port"].as_integer_or_default(5001),
         PROJECT_VER,
-        *parser
+        parser
     }.start();
     spdlog::trace("shutting down {} v{}", PROJECT_NAME, PROJECT_VER);
     return 0;

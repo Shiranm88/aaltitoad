@@ -17,6 +17,7 @@
  */
 #include "../cli_common.h"
 #include "cli_options.h"
+#include "util/warnings.h"
 #include <aaltitoadpch.h>
 #include <config.h>
 #include <ntta/interesting_tocker.h>
@@ -71,8 +72,15 @@ void parse_and_execute_simulator(std::map<std::string, argument_t>& cli_argument
     spdlog::trace("parsing with {0} plugin", selected_parser);
     auto parser = std::get<parser_ctor_t>(available_plugins.at(selected_parser).function)();
     ya::timer<unsigned int> t{};
-    auto automata = parser->parse_files(cli_arguments["input"].as_list(), ignore_list);
+    auto parse_result = parser->parse_files(cli_arguments["input"].as_list(), ignore_list);
     spdlog::trace("model parsing took {0}ms", t.milliseconds_elapsed());
+    for(auto& diagnostic : parse_result.diagnostics)
+        aaltitoad::warnings::print_diagnostic(diagnostic);
+    if(!parse_result.result.has_value()) {
+        spdlog::error("compilation failed");
+        return;
+    }
+    auto automata = std::move(parse_result.result.value());
 
     /// Inject tockers - CLI Format: "name(argument)"
     for(auto& arg : cli_arguments["tocker"].as_list_or_default({})) {

@@ -24,13 +24,13 @@
 #include <magic_enum.hpp>
 #include <util/warnings.h>
 
-int print_required_args() {
+inline int print_required_args() {
     std::cout << "Required arguments:\n";
     std::cout << " --input / -f\n";
     return 1;
 }
 
-int print_help(const std::string& program_name, const std::vector<option_t>& options) {
+inline int print_help(const std::string& program_name, const std::vector<option_t>& options) {
     std::cout << get_license() << std::endl;
     std::cout << PROJECT_NAME << " v" << PROJECT_VER << std::endl;
     std::cout << "USAGE: " << program_name << " -f /path/to/tta/dir [OPTIONS] \n" << std::endl;
@@ -39,12 +39,12 @@ int print_help(const std::string& program_name, const std::vector<option_t>& opt
     return 0;
 }
 
-int print_version() {
+inline int print_version() {
     std::cout << PROJECT_NAME << " v" << PROJECT_VER << std::endl;
     return 0;
 }
 
-void disable_warnings(const std::vector<std::string>& disable_warns) {
+inline void disable_warnings(const std::vector<std::string>& disable_warns) {
     aaltitoad::warnings::enable_all();
     for(auto& w : disable_warns) {
         auto opt = magic_enum::enum_cast<aaltitoad::w_t>(w);
@@ -55,7 +55,7 @@ void disable_warnings(const std::vector<std::string>& disable_warns) {
     }
 }
 
-int list_warnings() {
+inline int list_warnings() {
     std::cout << "[WARNINGS]:\n";
     for(const auto& warning : aaltitoad::warnings::descriptions())
         std::cout << "\t - [" << magic_enum::enum_name(warning.first) << "]: " << warning.second << "\n";

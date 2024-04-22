@@ -25,12 +25,17 @@
 namespace aaltitoad::hawk::graphedit {
     auto create_parser() -> plugin::parser*;
 
+    struct compile_result {
+        std::vector<Diagnostic> diagnostics;
+        std::optional<tta_template> result;
+    };
+
     class parser : public plugin::parser {
     public:
         parser();
         ~parser() override = default;
-        auto parse_files(const std::vector<std::string>& filepaths, const std::vector<std::string> &ignore_list) -> std::unique_ptr<ntta_t> override;
-        auto parse_model(const Buffer& buffer) -> std::unique_ptr<ntta_t> override;
+        auto parse_files(const std::vector<std::string>& filepaths, const std::vector<std::string> &ignore_list) -> plugin::parse_result override;
+        auto parse_model(const Buffer& buffer) -> plugin::parse_result override;
     private:
         auto should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) -> bool;
         auto should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) -> bool;
@@ -38,7 +43,8 @@ namespace aaltitoad::hawk::graphedit {
 
         auto to_graph(const Graph& g) -> graph_t;
         auto to_model(const Buffer& buffer) -> model_t;
-        auto compile_model(const model_t& model) -> tta_template;
+        auto compile_type(const graphedit::location_type_t& type) -> urgency_t;
+        auto compile_model(const model_t& model, const std::string& model_key) -> compile_result;
     };
 }
 

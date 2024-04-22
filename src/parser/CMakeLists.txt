@@ -14,12 +14,13 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-project(parser_plugins VERSION 1.0.0)
+project(parser_plugins VERSION 2.0.0)
 # TODO: Test if you need to extract scoped_template_builder into it's own .so/.dylib/.dll
 add_library(huppaal_parser SHARED
         hawk/scoped_template_builder/model.cpp
         hawk/scoped_template_builder/scoped_template_builder.cpp
         hawk/scoped_template_builder/scoped_interpreter.cpp
+        hawk/diagnostics.cpp
         hawk/huppaal/parser.cpp)
 target_link_libraries(huppaal_parser PUBLIC aaltitoad expr nlohmann_json::nlohmann_json)
 if(${CODE_COVERAGE})
@@ -31,6 +32,7 @@ add_library(graphedit_parser SHARED
         hawk/scoped_template_builder/model.cpp
         hawk/scoped_template_builder/scoped_template_builder.cpp
         hawk/scoped_template_builder/scoped_interpreter.cpp
+        hawk/diagnostics.cpp
         hawk/graphedit/parser.cpp
         hawk/graphedit/model.cpp)
 target_link_libraries(graphedit_parser PUBLIC aaltitoad expr nlohmann_json::nlohmann_json)

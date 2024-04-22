@@ -17,11 +17,14 @@
  */
 #ifndef AALTITOAD_SCOPED_TEMPLATE_BUILDER_H
 #define AALTITOAD_SCOPED_TEMPLATE_BUILDER_H
+#include "lsp.pb.h"
 #include "model.h"
+#include "parser/hawk/diagnostics.h"
+#include "plugin_system/parser.h"
 #include "scoped_interpreter.h"
+#include <ntta/builder/ntta_builder.h>
 #include <ntta/tta.h>
 #include <util/tarjan.h>
-#include <ntta/builder/ntta_builder.h>
 
 namespace aaltitoad::hawk {
     class scoped_template_builder {
@@ -31,20 +34,24 @@ namespace aaltitoad::hawk {
         expr::symbol_table_t external_symbols{};
         std::regex param_section{R"(\(.+(,.+)*\))"};
         std::regex arg_split{R"([\""].*[\""]|[^,]+)"};
+        std::vector<Diagnostic> diagnostics{};
+        diagnostic_factory diag_factory{};
     public:
         auto add_template(const tta_template& t) -> scoped_template_builder&;
         auto add_global_symbols(const std::vector<part_t>& parts) -> scoped_template_builder&;
         auto add_global_symbols(const std::string& d) -> scoped_template_builder&;
-        auto build_heap() -> ntta_t*;
+        auto add_diagnostics(const std::vector<Diagnostic>& diags) -> scoped_template_builder&;
+        auto build() -> plugin::parse_result;
     private:
-        auto construct_interpreter_from_scope(const tta_instance_t& instance, const std::string& scoped_name) -> scoped_interpreter;
+        auto construct_interpreter_from_scope(const tta_instance_t& instance, const std::string& scoped_name) -> std::optional<scoped_interpreter>;
         void parse_declarations_recursively(const tta_instance_t& instance, const std::string& parent_name);
         void instantiate_tta_recursively(const tta_instance_t& instance, const std::string& parent_name, ntta_builder& network_builder);
         auto generate_dependency_graph() -> ya::graph<std::string,std::string,std::string>;
         auto find_instance_sccs(ya::graph<std::string,std::string,std::string>& g) -> std::vector<scc_t<std::string,std::string,std::string>>;
-        void throw_if_infinite_recursion_in_dependencies();
+        auto has_infinite_recursion_in_dependencies(const std::string& main_template) -> bool;
         auto get_invocation_arguments(const tta_instance_t& instance, scoped_interpreter& interpreter) -> std::vector<expr::symbol_value_t>;
-        auto get_invocation_parameters(const tta_instance_t& instance) -> std::vector<std::string>;
+        auto get_invocation_parameters(const tta_instance_t& instance) -> std::optional<std::vector<std::string>>;
+        auto error() const -> plugin::parse_result;
     };
 }
 

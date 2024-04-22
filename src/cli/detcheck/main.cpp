@@ -68,7 +68,12 @@ auto get_ntta(std::map<std::string, argument_t>& cli_arguments) -> std::unique_p
     spdlog::trace("parsing with {0} plugin", selected_parser);
     auto parser = std::get<parser_ctor_t>(available_plugins.at(selected_parser).function)();
     ya::timer<unsigned int> t{};
-    auto automata = std::unique_ptr<aaltitoad::ntta_t>(parser->parse_files(cli_arguments["input"].as_list(), ignore_list));
+    auto parse_result = parser->parse_files(cli_arguments["input"].as_list(), ignore_list);
+    for(auto& diagnostic : parse_result.diagnostics)
+        aaltitoad::warnings::print_diagnostic(diagnostic);
+    if(!parse_result.result.has_value())
+        throw std::logic_error("compilation failed");
+    auto automata = std::move(parse_result.result.value());
     spdlog::trace("model parsing took {0}ms", t.milliseconds_elapsed());
     return automata;
 }

@@ -35,7 +35,6 @@ namespace aaltitoad::hawk {
         j.at("id").get_to(l.id);
         j.at("nickname").get_to(l.nickname);
         j.at("urgency").get_to(l.urgency);
-        j.at("invariant").get_to(l.invariant);
     }
 
     void from_json(const nlohmann::json& j, edge_t& e) {

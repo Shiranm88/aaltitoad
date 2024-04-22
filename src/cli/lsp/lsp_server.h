@@ -41,9 +41,10 @@ namespace aaltitoad::lsp::proto {
         std::optional<std::function<void(const ProgressReport&)>> progress_callback;
         std::vector<Diagnostic> lints;
         ntta_t network;
-        plugin::parser& parser;
+        std::shared_ptr<plugin::parser> parser;
+        std::mutex write_mutex{};
     public:
-        LanguageServerImpl(int port, const std::string& semver, plugin::parser& parser);
+        LanguageServerImpl(int port, const std::string& semver, const std::shared_ptr<plugin::parser>& parser);
         ~LanguageServerImpl();
         void start();
 
@@ -70,7 +71,7 @@ namespace aaltitoad::lsp::proto {
     private:
         void progress(const ProgressReportType& type, const std::string& message);
         void notify(const NotificationLevel& level, const std::string& message);
-        void diagnostic(const Severity& severity, const std::string& title, const std::string& message);
+        void diagnostic(const std::vector<Diagnostic>& diags);
     };
 }
 

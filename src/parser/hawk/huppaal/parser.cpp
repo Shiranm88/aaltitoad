@@ -28,7 +28,7 @@ namespace aaltitoad::hawk::huppaal {
 
     }
 
-    auto parser::parse_files(const std::vector<std::string>& filepaths, const std::vector<std::string> &ignore_list) -> std::unique_ptr<aaltitoad::ntta_t> {
+    auto parser::parse_files(const std::vector<std::string>& filepaths, const std::vector<std::string> &ignore_list) -> plugin::parse_result {
         scoped_template_builder builder{};
         for(const auto& filepath : filepaths) {
             for(const auto &entry: std::filesystem::directory_iterator(filepath)) {
@@ -58,10 +58,10 @@ namespace aaltitoad::hawk::huppaal {
             }
         }
         spdlog::trace("building the ntta_t");
-        return std::unique_ptr<aaltitoad::ntta_t>(builder.build_heap());
+        return builder.build();
     }
 
-    auto parser::parse_model(const Buffer& buffer) -> std::unique_ptr<aaltitoad::ntta_t> {
+    auto parser::parse_model(const Buffer& buffer) -> plugin::parse_result {
         spdlog::error("parsing model buffers not supported yet");
         throw std::logic_error{"parsing model buffers not supported yet"};
     }

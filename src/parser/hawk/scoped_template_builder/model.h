@@ -27,7 +27,6 @@ namespace aaltitoad::hawk {
     struct location_t {
         std::string id;
         std::string nickname;
-        std::string invariant;
         urgency_t urgency{urgency_t::invalid};
     };
 

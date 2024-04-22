@@ -68,4 +68,29 @@ namespace aaltitoad {
         }
         warn(warning, ss.str());
     }
+
+    void warnings::print_diagnostic(const Diagnostic& diagnostic) {
+        std::stringstream ss{};
+        std::string sep = "";
+        for(auto& elem : diagnostic.affectedelements()) {
+            ss << sep << elem;
+            sep = ",";
+        }
+        switch(diagnostic.severity()) {
+            case SEVERITY_HINT:
+                spdlog::trace("[{1}]: [{0}]\n{2}", ss.str(), diagnostic.title(), diagnostic.description());
+                break;
+            case SEVERITY_INFO:
+                spdlog::info("[{1}]: [{0}]\n{2}", ss.str(), diagnostic.title(), diagnostic.description());
+                break;
+            case SEVERITY_WARNING:
+                spdlog::warn("[{1}]: [{0}]\n{2}", ss.str(), diagnostic.title(), diagnostic.description());
+                break;
+            case SEVERITY_ERROR:
+                spdlog::error("[{1}]: [{0}]\n{2}", ss.str(), diagnostic.title(), diagnostic.description());
+                break;
+            default:
+                break;
+        }
+    }
 }

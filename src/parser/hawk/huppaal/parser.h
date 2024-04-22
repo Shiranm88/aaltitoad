@@ -28,8 +28,8 @@ namespace aaltitoad::hawk::huppaal {
     public:
         parser();
         ~parser() override = default;
-        auto parse_files(const std::vector<std::string>& filepaths, const std::vector<std::string> &ignore_list) -> std::unique_ptr<ntta_t> override;
-        auto parse_model(const Buffer& buffer) -> std::unique_ptr<ntta_t>  override;
+        auto parse_files(const std::vector<std::string>& filepaths, const std::vector<std::string> &ignore_list) -> plugin::parse_result override;
+        auto parse_model(const Buffer& buffer) -> plugin::parse_result override;
     private:
         auto should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) -> bool;
         auto should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) -> bool;

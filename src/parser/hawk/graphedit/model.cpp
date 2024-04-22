@@ -29,7 +29,6 @@ namespace aaltitoad::hawk::graphedit {
 
     void from_json(const nlohmann::json& j, location_t& t) {
         j.at("type").get_to(t.type);
-        j.at("").get_to(t.type);
         j.at("nickname").at(1).at("message").get_to(t.nickname);
     }
 
@@ -66,14 +65,18 @@ namespace aaltitoad::hawk::graphedit {
     void from_json(const nlohmann::json& j, edge_t& t) {
         std::string class_name = j.at(0);
         if(class_name.find("ModelBoxEdge") != std::string::npos) {
-            spdlog::trace("ignoring box edge");
-            return;
-        }
-        if(class_name.find("ModelConnection") != std::string::npos) {
+            t.type = edge_type_t::box_edge;
             j.at(1).at("source").get_to(t.source);
             j.at(1).at("target").get_to(t.target);
             return;
         }
+        if(class_name.find("ModelConnection") != std::string::npos) {
+            t.type = edge_type_t::normal;
+            j.at(1).at("source").get_to(t.source);
+            j.at(1).at("target").get_to(t.target);
+            return;
+        }
+        t.type = edge_type_t::invalid;
         spdlog::info("unrecognized edge type: {}", class_name);
     }
 
