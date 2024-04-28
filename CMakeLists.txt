@@ -115,7 +115,14 @@ add_subdirectory(src/parser)
 add_subdirectory(test)
 
 install(TARGETS ${PROJECT_NAME} expr_lang ctl_lang aaltitoad-verifier aaltitoad-simulator aaltitoad-detcheck aaltitoad-lsp)
-install(FILES src/man/tta.7 DESTINATION man/man7)
+
+install(FILES
+    src/man/aaltitoad-verifier.1
+    DESTINATION man/man1)
+install(FILES
+    src/man/tta.7
+    DESTINATION man/man7)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     install(FILES ${CMAKE_BINARY_DIR}/libz3.so DESTINATION lib)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -125,6 +132,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 else()
     message(WARNING "unknown system ${CMAKE_SYSTEM_NAME}")
 endif()
+
 install(DIRECTORY
     src/ntta
     src/plugin_system
