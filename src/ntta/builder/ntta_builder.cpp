@@ -67,6 +67,15 @@ namespace aaltitoad {
     auto tta_builder::build() -> tta_t {
         if(!starting_location.has_value())
             throw std::logic_error("no starting location provided");
+        if(!factory.is_valid()) {
+            std::stringstream ss{};
+            auto sep = "";
+            for(auto& ie : factory.get_invalid_elements()) {
+                ss << sep << "[elem](" << ie << ")";
+                sep = ",";
+            }
+            throw std::logic_error("invalid tta_t graph, affected elements: " + ss.str());
+        }
         return { std::move(factory.build_heap()), starting_location.value() };
     }
 

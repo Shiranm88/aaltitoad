@@ -228,6 +228,7 @@ namespace aaltitoad::hawk::graphedit {
                     switch(l.type) {
                         case location_type_t::initial:
                             initial_location = result;
+                            break;
                         case location_type_t::final:
                             final_location = result;
                             break;

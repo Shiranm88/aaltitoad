@@ -170,7 +170,7 @@ namespace aaltitoad::hawk {
         }
     }
 
-    void scoped_template_builder::instantiate_tta_recursively(const tta_instance_t& instance, const std::string& parent_name, ntta_builder& network_builder) { // NOLINT(misc-no-recursion)
+    void scoped_template_builder::instantiate_tta_recursively(const tta_instance_t& instance, const std::string& parent_name, ntta_builder& network_builder) {
         auto scoped_name = (parent_name.empty() ? parent_name : parent_name + ".") + instance.invocation;
         spdlog::trace("{0}: instantiating", scoped_name);
         try {
