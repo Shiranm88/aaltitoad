@@ -54,6 +54,14 @@ namespace aaltitoad::hawk::graphedit {
         .message="Invalid nail",
         .description="Nails are invalid if there are more than one outgoing edge",
         .severity=Severity::SEVERITY_ERROR};
+    diagnostic invalid_model_file(const std::string& filename, const std::string& err) {
+        return {
+            .identifier="invalid_model_file",
+            .title="Could not load " + filename,
+            .message=err,
+            .description="Failed loading model file",
+            .severity=Severity::SEVERITY_WARNING};
+    }
 
     static diagnostic instantiations_not_supported{ // TODO: support instantiations
         .identifier="instantiations_not_supported",
@@ -77,27 +85,38 @@ namespace aaltitoad::hawk::graphedit {
     auto parser::parse_files(const std::vector<std::string>& filepaths, const std::vector<std::string> &ignore_list) -> plugin::parse_result {
         hawk::scoped_template_builder builder{};
         std::vector<Diagnostic> diagnostics{};
+        diagnostic_factory diag_factory{};
         for(const auto& filepath : filepaths) {
-            for(const auto &entry: std::filesystem::directory_iterator(filepath)) {
+            for(const auto& entry: std::filesystem::directory_iterator(filepath)) {
                 try {
                     if(should_ignore(entry, ignore_list)) {
                         spdlog::trace("ignoring file {0}", entry.path().c_str());
                         continue;
                     }
+                    diag_factory.with_model_key(entry.path());
                     std::ifstream input_filestream(entry.path());
                     auto json_file = nlohmann::json::parse(input_filestream,
                             /* callback */ nullptr,
                             /* allow exceptions */ true,
                             /* ignore_comments */ true);
                     model_t model{};
-                    from_json(json_file, model);
-                    auto result = compile_model(model, entry.path()); // TODO: verify that the model key is the entry.path().
+                    try {
+                        from_json(json_file, model);
+                    } catch(std::exception& e) {
+                        // Not a valid model file. Do nothing (for now)
+                        continue;
+                    }
+                    // TODO: verify that the model key is the entry.path().
+                    auto result = compile_model(model, entry.path());
                     diagnostics.insert(result.diagnostics.begin(), result.diagnostics.end(), diagnostics.end());
                     if(result.result.has_value())
                         builder.add_template(result.result.value());
                 } catch (std::exception& e) {
                     spdlog::error("unable to parse json file {0}: {1}", entry.path().c_str(), e.what());
-                    throw;
+                    diagnostics.push_back(diag_factory
+                            .without_context()
+                            .create_diagnostic(
+                                invalid_model_file(entry.path().c_str(), e.what())));
                 }
             }
         }
@@ -126,7 +145,7 @@ namespace aaltitoad::hawk::graphedit {
             return {result.diagnostics, {}};
         builder.add_diagnostics(result.diagnostics);
         builder.add_template(result.result.value());
-        // TODO: BOOKMARK: Expressions with non-existent identifier references will compile just fine.
+        // TODO: Expressions with non-existent identifier references will compile just fine.
         //       Add a check that ensures that all identifiers in all expressions are available in the tta network tree
         spdlog::debug("buffer parsing took {}ms", t.milliseconds_elapsed());
         return builder.build();

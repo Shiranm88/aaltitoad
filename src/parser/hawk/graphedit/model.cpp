@@ -87,7 +87,7 @@ namespace aaltitoad::hawk::graphedit {
     }
 
     void from_json(const nlohmann::json& j, model_t& t) {
-        j.at("metadata").get_to(t.metadata);
+        j.at("metadata").at(1).get_to(t.metadata);
         j.at("syntax").get_to(t.syntax);
     }
 }

@@ -49,6 +49,7 @@ namespace aaltitoad::lsp::proto {
         result->set_name("aaltitoad-lsp");
         result->set_language("hawk");
         result->set_semanticversion(semver);
+        result->add_capabilities(Capability::CAPABILITY_PROJECT);
         result->add_capabilities(Capability::CAPABILITY_PROGRESS);
         result->add_capabilities(Capability::CAPABILITY_DIAGNOSTICS);
         result->add_capabilities(Capability::CAPABILITY_NOTIFICATIONS);
@@ -56,7 +57,23 @@ namespace aaltitoad::lsp::proto {
     }
 
     auto LanguageServerImpl::ProjectOpened(grpc::ServerContext* server_context, const Project* project, Empty* result) -> grpc::Status {
-        project->path();
+        try {
+            progress_start("opening project: " + project->name());
+            std::vector<std::string> exclude_files{};
+            exclude_files.reserve(project->excludefiles().size());
+            for(auto& ef : project->excludefiles())
+                exclude_files.push_back(ef.c_str());
+            auto new_ntta = parser->parse_files({project->path()}, exclude_files);
+            diagnostic(new_ntta.diagnostics);
+            if(new_ntta.result.has_value())
+                progress_end("success");
+            else
+                progress_end_fail("parser error");
+        } catch(std::exception& e) {
+            spdlog::error("error: {}", e.what());
+            notify_error(e.what());
+            progress_end_fail(std::string{"error: "} + e.what());
+        }
         return grpc::Status::OK;
     }
 
