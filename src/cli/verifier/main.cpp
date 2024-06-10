@@ -28,7 +28,7 @@
 #include <expr-lang/expr-scanner.hpp>
 #include <expr-lang/expr-parser.hpp>
 #include "expr-wrappers/ctl-interpreter.h"
-#include "magic_enum.hpp"
+#include <magic_enum/magic_enum.hpp>
 #include "query/query_json_loader.h"
 #include "spdlog/common.h"
 #include "spdlog/spdlog.h"

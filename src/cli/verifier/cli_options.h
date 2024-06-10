@@ -20,9 +20,8 @@
 #include "arguments.h"
 #include <vector>
 #include <argvparse.h>
-#include <iostream>
 #include <config.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <util/warnings.h>
 
 std::vector<option_t> get_options() {

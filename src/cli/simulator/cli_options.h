@@ -19,7 +19,7 @@
 #define AALTITOAD_CLI_OPTIONS_H
 #include <argvparse.h>
 #include <util/warnings.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 std::vector<option_t> get_options() {
     return {

@@ -21,7 +21,7 @@
 #include <argvparse.h>
 #include <iostream>
 #include <config.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <util/warnings.h>
 
 inline int print_required_args() {

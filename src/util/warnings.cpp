@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "warnings.h"
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 namespace aaltitoad {
     static bool default_value = false;
