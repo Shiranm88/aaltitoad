@@ -32,12 +32,6 @@ namespace aaltitoad::plugins {
         return val;
     }
 
-    bool is_dynamic_library(const std::string& filename) {
-        return contains(filename, ".so") ||
-               contains(filename, ".dll") ||
-               contains(filename, ".dylib");
-    }
-
     plugin_map_t load(const std::vector<std::string> &search_directories) {
         plugin_map_t loaded_plugins{};
         for (auto &directory: search_directories) {
@@ -49,8 +43,6 @@ namespace aaltitoad::plugins {
             for (const auto &entry: std::filesystem::directory_iterator(directory)) {
                 try {
                     if (!entry.is_regular_file())
-                        continue;
-                    if (!is_dynamic_library(entry.path().filename()))
                         continue;
                     spdlog::trace("attempting to load file '{0}' as a plugin", entry.path().filename().string());
                     std::string entry_name = entry.path().c_str();
