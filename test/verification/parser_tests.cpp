@@ -31,6 +31,8 @@ SCENARIO("parsing fischer-n suite", "[hawk_parser]") {
         folders.emplace_back(AALTITOAD_PROJECT_DIR "/test/verification/fischer-suite/fischer-2");
         WHEN("parsing the network") {
             auto parse_result = aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list);
+            CHECK(parse_result.diagnostics.size() == 1); // TODO: The success state should not result in diagnostics
+            REQUIRE(parse_result.result.has_value());
             auto n = std::move(parse_result.result.value());
             std::cout << *n << std::endl;
             THEN("three TTAs are constructed (Main, fischer1, and fischer2)") {
@@ -42,6 +44,8 @@ SCENARIO("parsing fischer-n suite", "[hawk_parser]") {
         folders.emplace_back(AALTITOAD_PROJECT_DIR "/test/verification/fischer-suite/fischer-5");
         WHEN("parsing the network") {
             auto parse_result = aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list);
+            CHECK(parse_result.diagnostics.size() == 4); // TODO: The success state should not result in diagnostics
+            REQUIRE(parse_result.result.has_value());
             auto n = std::move(parse_result.result.value());
             std::cout << *n << std::endl;
             THEN("six TTAs are constructed (fischer instances + main)") {
@@ -53,6 +57,8 @@ SCENARIO("parsing fischer-n suite", "[hawk_parser]") {
         folders.emplace_back(AALTITOAD_PROJECT_DIR "/test/verification/fischer-suite/fischer-10");
         WHEN("parsing the network") {
             auto parse_result = aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list);
+            CHECK(parse_result.diagnostics.size() == 9); // TODO: The success state should not result in diagnostics
+            REQUIRE(parse_result.result.has_value());
             auto n = std::move(parse_result.result.value());
             std::cout << *n << std::endl;
             THEN("eleven TTAs are constructed (fischer instances + main)") {
@@ -68,7 +74,11 @@ SCENARIO("parsing failing suite", "[hawk_parser]") {
     GIVEN("bad-template-params") {
         folders.emplace_back(AALTITOAD_PROJECT_DIR "/test/verification/failing-suite/bad-template-params");
         THEN("parsing the network fails with a parse error") {
-            REQUIRE_THROWS_AS(aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list), std::logic_error);
+            auto res = aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list);
+            REQUIRE(res.diagnostics.size() == 2); // TODO: We should prune duplicates
+            CHECK(res.diagnostics[0].message() == "Template parameter names must be unique");
+            CHECK(res.diagnostics[1].message() == "Template parameter names must be unique");
+            CHECK(!res.result.has_value());
         }
     }
     GIVEN("bad-invocation-args") {
@@ -80,12 +90,17 @@ SCENARIO("parsing failing suite", "[hawk_parser]") {
     GIVEN("bad-invocation-args-amount") {
         folders.emplace_back(AALTITOAD_PROJECT_DIR "/test/verification/failing-suite/bad-invocation-args-amount");
         THEN("parsing the network fails with a parse error") {
-            REQUIRE_THROWS_AS(aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list), std::logic_error);
+            auto res = aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list);
+            REQUIRE(res.diagnostics.size() == 2); // TODO: We should prune duplicates
+            CHECK(res.diagnostics[0].message() == "Provided arguments (3) does not match parameters (2)");
+            CHECK(res.diagnostics[1].message() == "Provided arguments (3) does not match parameters (2)");
+            CHECK(!res.result.has_value());
         }
     }
     GIVEN("bad-declarations") {
         folders.emplace_back(AALTITOAD_PROJECT_DIR "/test/verification/failing-suite/bad-declarations");
         THEN("parsing the network fails with a parse error") {
+            // TODO: This is a bit weird, that _sometimes_ the parser throws and exception, and _sometimes_ it doesnt...
             REQUIRE_THROWS_AS(aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list), std::logic_error);
         }
     }
@@ -98,13 +113,19 @@ SCENARIO("parsing failing suite", "[hawk_parser]") {
     GIVEN("bad-duplicated-locations") {
         folders.emplace_back(AALTITOAD_PROJECT_DIR "/test/verification/failing-suite/bad-duplicated-locations");
         THEN("parsing the network fails with a parse error") {
-            REQUIRE_THROWS_AS(aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list), std::logic_error);
+            auto res = aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list);
+            REQUIRE(res.diagnostics.size() == 1);
+            CHECK(res.diagnostics[0].message() == "Locations with same name is not allowed");
+            CHECK(!res.result.has_value());
         }
     }
     GIVEN("bad-recursive-instantiation") {
         folders.emplace_back(AALTITOAD_PROJECT_DIR "/test/verification/failing-suite/bad-recursive-instantiation");
         THEN("parsing the network fails with a parse error") {
-            REQUIRE_THROWS_AS(aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list), std::logic_error);
+            auto res = aaltitoad::hawk::huppaal::parser{}.parse_files(folders, ignore_list);
+            REQUIRE(res.diagnostics.size() == 1);
+            CHECK(res.diagnostics[0].message().find("There are loops in the instantiation tree") != std::string::npos);
+            CHECK(!res.result.has_value());
         }
     }
     GIVEN("bad-hawk-project") {

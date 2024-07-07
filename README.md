@@ -77,9 +77,8 @@ apt-get install -y flex bison make m4 cmake libfl-dev libbison-dev libgrpc-dev
 
 All other dependencies are handled through the wonderful [CPM](https://github.com/cpm-cmake/CPM.cmake) package manager.
 ```sh
-mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make
+cmake -DCMAKE_BUILD_TYPE=Release -B out/Release
+cmake --build out/Release
 ```
 If the CPM step is taking a long time, try rerunning with `-DCPM_SOURCE_CACHE=~/.cache/CPM`
 

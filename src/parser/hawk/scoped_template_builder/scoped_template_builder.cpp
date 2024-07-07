@@ -253,7 +253,7 @@ namespace aaltitoad::hawk {
         for(auto& decl : global_symbol_declarations)
             external_symbols += expression_driver{}.parse(decl).get_symbol_table();
         parse_declarations_recursively(t, "");
-        instantiate_tta_recursively(t, "", builder);
+        instantiate_tta_recursively(t, "", builder); // TODO: prune duplicates
         builder.add_symbols(internal_symbols);
         builder.add_external_symbols(external_symbols);
         return {
