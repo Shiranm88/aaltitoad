@@ -49,3 +49,6 @@ Release/
 .cache/
 \*cmake-tools\*
 out
+
+# Assorted things
+PROGRESS.md

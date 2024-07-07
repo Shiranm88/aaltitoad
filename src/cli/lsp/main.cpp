@@ -82,4 +82,3 @@ auto load_plugins(std::map<std::string, argument_t>& cli_arguments) -> plugin_ma
     look_dirs.insert(look_dirs.end(), provided_dirs.begin(), provided_dirs.end());
     return aaltitoad::plugins::load(look_dirs);
 }
-
