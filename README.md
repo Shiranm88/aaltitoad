@@ -96,12 +96,14 @@ If you want to include code-coverage stats, provide the `-DCODE_COVERAGE=ON` cma
 
 ## How To Use
 Aaltitoad provides three primary compilation targets. All commandline interfaces have a help page that you can summon with the `--help` argument.
- - `verifier`: A verification engine command line interface
+ - `aaltitoad-verifier`: A verification engine command line interface
    - use this if you want to analyze your NTTA
- - `simulator`: A runtime command line interface
+ - `aaltitoad-simulator`: A runtime command line interface
    - use this if you want to execute your NTTA and link with your custom tockers (see below)
+ - `aaltitoad-lsp`: A MLSP (Model Language Server Protocol) server implementation (Still experimental)
+   - use this if you want to integrate aaltitoad with an MLSP compatible model editor (see [graphedit](https://github.com/sillydan1/graphedit))
  - `aaltitoad`: A library with all things aaltitoad
-   - use this to create your own NTTA-based applications e.g. another verifier, runtime or even compiler
+   - use this to create your own NTTA-based applications e.g. another verifier, compiler, runtime etc.
 
 ------
 
