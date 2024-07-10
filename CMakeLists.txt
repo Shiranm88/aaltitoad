@@ -34,7 +34,6 @@ find_package(FLEX REQUIRED)
 
 add_compile_definitions(DEFAULT_EXPRESSION_VALUE="true")
 CPMAddPackage(NAME expr VERSION 3.0.6 GITHUB_REPOSITORY sillydan1/expr OPTIONS "ENABLE_Z3 ON")
-CPMAddPackage("gh:sillydan1/argvparse@1.2.3")
 CPMAddPackage("gh:sillydan1/ctl-expr@2.0.4")
 CPMAddPackage("gh:sillydan1/graphedit-protobuf@1.2.1")
 
@@ -48,6 +47,7 @@ CPMAddPackage("gh:yalibs/yauuid@1.0.2")
 CPMAddPackage("gh:yalibs/yasetwrappers@1.0.1")
 CPMAddPackage("gh:yalibs/yapermutation@1.1.3")
 
+CPMAddPackage("gh:bfgroup/lyra#1.6.1")
 CPMAddPackage("gh:gabime/spdlog@1.14.1")
 CPMAddPackage("gh:nlohmann/json@3.11.3")
 CPMAddPackage("gh:neargye/magic_enum@0.9.5")
@@ -56,62 +56,79 @@ CPMAddPackage("gh:cpm-cmake/CPMLicenses.cmake@0.0.7")
 cpm_licenses_create_disclaimer_target(write_licenses "${CMAKE_BINARY_DIR}/third_party.txt" "${CPM_PACKAGES}")
 
 add_library(${PROJECT_NAME} SHARED 
-        src/expr-wrappers/interpreter.cpp
-        src/expr-wrappers/parameterized-expr-evaluator.cpp
-        src/expr-wrappers/parameterized-ast-factory.cpp
-        src/ntta/builder/ntta_builder.cpp
-        src/ntta/tta.cpp
-        src/ntta/interesting_tocker.cpp
-        src/plugin_system/plugin_system.cpp
-        src/verification/forward_reachability.cpp
-        src/verification/ctl/ctl_sat.cpp
-        src/util/warnings.cpp
-        src/util/random.cpp
-        src/util/string_extensions.cpp)
+    src/expr-wrappers/interpreter.cpp
+    src/expr-wrappers/parameterized-expr-evaluator.cpp
+    src/expr-wrappers/parameterized-ast-factory.cpp
+    src/ntta/builder/ntta_builder.cpp
+    src/ntta/tta.cpp
+    src/ntta/interesting_tocker.cpp
+    src/plugin_system/plugin_system.cpp
+    src/verification/forward_reachability.cpp
+    src/verification/ctl/ctl_sat.cpp
+    src/util/warnings.cpp
+    src/util/random.cpp
+    src/util/string_extensions.cpp)
 if(${CODE_COVERAGE})
     target_link_options(${PROJECT_NAME} PUBLIC --coverage)
     target_compile_options(${PROJECT_NAME} PUBLIC --coverage)
 endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC expr_lang dl pthread ctl_lang graphedit_proto)
 target_include_directories(${PROJECT_NAME} PUBLIC
-        ${CMAKE_BINARY_DIR}
-        ${CMAKE_CURRENT_BINARY_DIR}
-        ${argvparse_SOURCE_DIR}/include
-        ${argvparse_SOURCE_DIR}/src
-        ${rapidjson_SOURCE_DIR}/include
-        ${ctl-expr_SOURCE_DIR}/include
-        ${ctl-expr_SOURCE_DIR}/src
-        ${ctl-expr_SOURCE_DIR}/../ctl-expr-build
-        ${json_SOURCE_DIR}/include
-        ${spdlog_SOURCE_DIR}/include
-        ${expr_SOURCE_DIR}/include
-        ${expr_SOURCE_DIR}/src
-        ${expr_BUILD_DIR}
-        ${optionparser_SOURCE_DIR}/src
-        ${magic_enum_SOURCE_DIR}/include
-        ${graphedit-protobuf_BINARY_DIR}/src/main/proto
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${argvparse_SOURCE_DIR}/include
+    ${argvparse_SOURCE_DIR}/src
+    ${rapidjson_SOURCE_DIR}/include
+    ${ctl-expr_SOURCE_DIR}/include
+    ${ctl-expr_SOURCE_DIR}/src
+    ${ctl-expr_SOURCE_DIR}/../ctl-expr-build
+    ${json_SOURCE_DIR}/include
+    ${spdlog_SOURCE_DIR}/include
+    ${expr_SOURCE_DIR}/include
+    ${expr_SOURCE_DIR}/src
+    ${expr_BUILD_DIR}
+    ${optionparser_SOURCE_DIR}/src
+    ${magic_enum_SOURCE_DIR}/include
+    ${graphedit-protobuf_BINARY_DIR}/src/main/proto
 
-        ${yatimer_SOURCE_DIR}/include
-        ${yaoverload_SOURCE_DIR}/include
-        ${yahashcombine_SOURCE_DIR}/include
-        ${yathreadpool_SOURCE_DIR}/include
-        ${yagraph_SOURCE_DIR}/include
-        ${yatree_SOURCE_DIR}/include
-        ${yauuid_SOURCE_DIR}/include
-        ${yapermutation_SOURCE_DIR}/include
-        ${yasetwrappers_SOURCE_DIR}/include
-        src
-        # strictly not required, but it helps my clangd lsp setup and it doesn't hurt
-        ${FLEX_INCLUDE_DIRS}
-        ${BISON_INCLUDE_DIRS}
+    ${yatimer_SOURCE_DIR}/include
+    ${yaoverload_SOURCE_DIR}/include
+    ${yahashcombine_SOURCE_DIR}/include
+    ${yathreadpool_SOURCE_DIR}/include
+    ${yagraph_SOURCE_DIR}/include
+    ${yatree_SOURCE_DIR}/include
+    ${yauuid_SOURCE_DIR}/include
+    ${yapermutation_SOURCE_DIR}/include
+    ${yasetwrappers_SOURCE_DIR}/include
+    ${lyra_SOURCE_DIR}/include
+    src
+    # strictly not required, but it helps my clangd lsp setup and it doesn't hurt
+    ${FLEX_INCLUDE_DIRS}
+    ${BISON_INCLUDE_DIRS}
 )
 
 add_compile_definitions(ENABLE_Z3)
-add_subdirectory(src/cli/simulator)
-add_subdirectory(src/cli/verifier)
-add_subdirectory(src/cli/detcheck)
-add_subdirectory(src/cli/lsp)
+add_executable(${PROJECT_NAME}-verifier
+    src/cli/verifier/main.cpp
+    src/cli/verifier/query/query_json_loader.cpp
+)
+add_executable(${PROJECT_NAME}-simulator
+    src/cli/simulator/main.cpp
+)
+add_executable(${PROJECT_NAME}-detcheck
+    src/cli/detcheck/main.cpp
+)
+add_executable(${PROJECT_NAME}-lsp
+    src/cli/lsp/main.cpp
+    src/cli/lsp/lsp_server.cpp
+)
 add_subdirectory(src/parser)
+
+target_link_libraries(${PROJECT_NAME}-verifier ${PROJECT_NAME} ctl argvparse)
+target_link_libraries(${PROJECT_NAME}-simulator ${PROJECT_NAME} ctl argvparse)
+target_link_libraries(${PROJECT_NAME}-detcheck ${PROJECT_NAME} ctl argvparse)
+target_link_libraries(${PROJECT_NAME}-lsp ${PROJECT_NAME} ctl argvparse)
+
 add_subdirectory(test)
 
 install(TARGETS ${PROJECT_NAME} expr_lang ctl_lang aaltitoad-verifier aaltitoad-simulator aaltitoad-detcheck aaltitoad-lsp)

@@ -68,7 +68,7 @@ using plugin_map_t = std::map<std::string, plugin_t>;
 std::ostream& operator<<(std::ostream&, const plugin_map_t&);
 
 namespace aaltitoad::plugins {
-    plugin_map_t load(const std::vector<std::string> &search_directories);
+    plugin_map_t load(const std::vector<std::string>& plugin_dirs);
 }
 
 #endif //AALTITOAD_PLUGIN_SYSTEM_H

@@ -15,16 +15,14 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "cli_options.h"
 #include "lsp_server.h"
 #include <aaltitoadpch.h>
-#include <cli/cli_common.h>
+#include <config.h>
 #include <csignal>
+#include <lyra/lyra.hpp>
 #include <nlohmann/json.hpp>
 #include <plugin_system/plugin_system.h>
 #include <timer>
-
-auto load_plugins(std::map<std::string, argument_t>& cli_arguments) -> plugin_map_t;
 
 void siginthandler(int param) {
     spdlog::info("exiting ({})", param);
@@ -33,52 +31,68 @@ void siginthandler(int param) {
 
 int main(int argc, char** argv) {
     signal(SIGINT, siginthandler);
-    auto options = get_options();
-    // TODO: add option to control grpc verbosity: gpr_set_log_verbosity(gpr_log_severity::GPR_LOG_SEVERITY_DEBUG);
-    auto cli_arguments = get_arguments(options, argc, argv);
-    if(cli_arguments["verbosity"])
-        spdlog::set_level(static_cast<spdlog::level::level_enum>(SPDLOG_LEVEL_OFF - cli_arguments["verbosity"].as_integer()));
-    if(cli_arguments["version"])
-        return print_version();
-    if(cli_arguments["help"])
-        return print_help(argv[0], options);
-    if(!is_required_provided(cli_arguments, options))
-        return print_required_args();
-
+    bool show_help = false;
+    int verbosity = SPDLOG_LEVEL_INFO;
+    bool show_version = false;
+    std::vector<std::string> plugin_dirs = {};
+    std::string parser = "huppaal_parser";
+    bool list_plugins = false;
+    int port = 5001;
+    auto cli = lyra::cli()
+        | lyra::help(show_help).description("A MLSP (Model Language Server Protocol) server implementation")
+            ("show this message")
+        | lyra::opt(verbosity, "0-6")
+            ["-v"]["--verbosity"]("set verbosity level, default: " + std::to_string(verbosity))
+        | lyra::opt(show_version)
+            ["-V"]["--version"]("show version")
+        | lyra::opt(plugin_dirs, "DIR")
+            ["-d"]["--plugin-dir"]("use a directory to look for plugins")
+        | lyra::opt(parser, "PARSER")
+            ["-p"]["--parser"]("set a parser to use, default: " + parser)
+        | lyra::opt(list_plugins)
+            ["-L"]["--list-plugins"]("list found plugins and exit")
+        | lyra::opt(port, "PORT")
+            ["-P"]["--port"]("set port to host the lsp, default: " + std::to_string(port))
+        ;
+    auto args = cli.parse({argc, argv});
+    if(show_help) {
+        std::cout << cli << std::endl;
+        return 0;
+    }
+    if(verbosity < 0 || verbosity > SPDLOG_LEVEL_OFF) {
+        std::cout << "verbosity must be within 0-6" << std::endl;
+        return 1;
+    }
+    spdlog::set_level(static_cast<spdlog::level::level_enum>(SPDLOG_LEVEL_OFF - verbosity));
     spdlog::trace("welcome to {} v{}", PROJECT_NAME, PROJECT_VER);
+    if(show_version) {
+        std::cout << PROJECT_NAME << " v" << PROJECT_VER << std::endl;
+        return 0;
+    }
+    if(!args) {
+        spdlog::error(args.message());
+        return 1;
+    }
 
-    /// Load plugins
-    auto available_plugins = load_plugins(cli_arguments);
-    if(cli_arguments["list-plugins"]) {
+    spdlog::trace("loading plugins");
+    auto available_plugins = aaltitoad::plugins::load(plugin_dirs);
+    if(list_plugins) {
         std::cout << "available plugins:\n" << available_plugins;
         return 0;
     }
 
-    /// Get the parser
-    auto selected_parser = cli_arguments["parser"].as_string_or_default("huppaal_parser");
-    if(!available_plugins.contains(selected_parser) || available_plugins.at(selected_parser).type != plugin_type::parser) {
-        spdlog::error("no such parser available: '{0}'", selected_parser);
+    spdlog::trace("loading parser");
+    if(!available_plugins.contains(parser) || available_plugins.at(parser).type != plugin_type::parser) {
+        spdlog::error("no such parser available: '{}'", parser);
         return 1;
     }
 
-    spdlog::trace("building parser {}", selected_parser);
-    std::shared_ptr<aaltitoad::plugin::parser> parser{std::get<parser_ctor_t>(available_plugins.at(selected_parser).function)()};
+    spdlog::trace("building parser {}", parser);
+    std::shared_ptr<aaltitoad::plugin::parser> p{std::get<parser_ctor_t>(available_plugins.at(parser).function)()};
+
     spdlog::trace("starting language server...");
-    aaltitoad::lsp::proto::LanguageServerImpl{
-        cli_arguments["port"].as_integer_or_default(5001),
-        PROJECT_VER,
-        parser
-    }.start();
+    aaltitoad::lsp::proto::LanguageServerImpl{port, PROJECT_VER, p}.start();
+
     spdlog::trace("shutting down {} v{}", PROJECT_NAME, PROJECT_VER);
     return 0;
-}
-
-auto load_plugins(std::map<std::string, argument_t>& cli_arguments) -> plugin_map_t {
-    auto rpath = std::getenv("AALTITOAD_LIBPATH");
-    std::vector<std::string> look_dirs = { ".", "lib", "plugins" };
-    if(rpath)
-        look_dirs.emplace_back(rpath);
-    auto provided_dirs = cli_arguments["plugin-dir"].as_list_or_default({});
-    look_dirs.insert(look_dirs.end(), provided_dirs.begin(), provided_dirs.end());
-    return aaltitoad::plugins::load(look_dirs);
 }
