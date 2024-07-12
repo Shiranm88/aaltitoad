@@ -68,10 +68,6 @@ add_library(${PROJECT_NAME} SHARED
     src/util/warnings.cpp
     src/util/random.cpp
     src/util/string_extensions.cpp)
-if(${CODE_COVERAGE})
-    target_link_options(${PROJECT_NAME} PUBLIC --coverage)
-    target_compile_options(${PROJECT_NAME} PUBLIC --coverage)
-endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC expr_lang dl pthread ctl_lang graphedit_proto)
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_BINARY_DIR}
@@ -122,13 +118,38 @@ add_executable(${PROJECT_NAME}-lsp
     src/cli/lsp/main.cpp
     src/cli/lsp/lsp_server.cpp
 )
-add_subdirectory(src/parser)
+add_library(huppaal_parser SHARED
+        src/parser/hawk/scoped_template_builder/model.cpp
+        src/parser/hawk/scoped_template_builder/scoped_template_builder.cpp
+        src/parser/hawk/scoped_template_builder/scoped_interpreter.cpp
+        src/parser/hawk/diagnostics.cpp
+        src/parser/hawk/huppaal/parser.cpp)
+target_link_libraries(huppaal_parser PUBLIC aaltitoad expr nlohmann_json::nlohmann_json)
+
+add_library(graphedit_parser SHARED
+        src/parser/hawk/scoped_template_builder/model.cpp
+        src/parser/hawk/scoped_template_builder/scoped_template_builder.cpp
+        src/parser/hawk/scoped_template_builder/scoped_interpreter.cpp
+        src/parser/hawk/diagnostics.cpp
+        src/parser/hawk/graphedit/parser.cpp
+        src/parser/hawk/graphedit/model.cpp)
+target_link_libraries(graphedit_parser PUBLIC aaltitoad expr nlohmann_json::nlohmann_json)
+
+install(TARGETS huppaal_parser graphedit_parser DESTINATION lib)
 
 target_link_libraries(${PROJECT_NAME}-verifier ${PROJECT_NAME} ctl argvparse)
 target_link_libraries(${PROJECT_NAME}-simulator ${PROJECT_NAME} ctl argvparse)
 target_link_libraries(${PROJECT_NAME}-detcheck ${PROJECT_NAME} ctl argvparse)
 target_link_libraries(${PROJECT_NAME}-lsp ${PROJECT_NAME} ctl argvparse)
 
+if(${CODE_COVERAGE})
+    target_link_options(${PROJECT_NAME} PUBLIC --coverage)
+    target_compile_options(${PROJECT_NAME} PUBLIC --coverage)
+    target_link_options(huppaal_parser PUBLIC --coverage)
+    target_compile_options(huppaal_parser PUBLIC --coverage)
+    target_link_options(graphedit_parser PUBLIC --coverage)
+    target_compile_options(graphedit_parser PUBLIC --coverage)
+endif()
 add_subdirectory(test)
 
 install(TARGETS ${PROJECT_NAME} expr_lang ctl_lang aaltitoad-verifier aaltitoad-simulator aaltitoad-detcheck aaltitoad-lsp)
