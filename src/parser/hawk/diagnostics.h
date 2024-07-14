@@ -17,7 +17,7 @@ namespace aaltitoad::hawk {
         // TODO: suggestion generator
     public:
         diagnostic_factory() = default;
-        auto without_context() const -> diagnostic_factory&;
+        auto without_context() -> diagnostic_factory&;
         auto with_model_key(const std::string& key) -> diagnostic_factory&;
         auto with_context(const std::string& element) -> diagnostic_factory&;
         auto with_context(const std::initializer_list<std::string>& elements) -> diagnostic_factory&;

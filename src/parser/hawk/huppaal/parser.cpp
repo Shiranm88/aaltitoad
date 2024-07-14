@@ -74,6 +74,71 @@ namespace aaltitoad::hawk::huppaal {
     auto parser::should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) -> bool {
         return std::regex_match(entry.path().c_str(), std::regex{ignore_regex});
     }
+
+    auto json_parser_t::scan(compiler& ctx, const std::vector<std::string>& filepaths, const std::vector<std::string>& ignore_list) const noexcept -> std::expected<std::string, error> {
+        // BOOKMARK: What should the scanner actually return?
+        // Traditionally, a scanner would give a linear token stream. If we were to take the metaphor directly, we would
+        // return something like a list of "tokens" i.e. different kindas of nodes and edges, i.e. an adjacency list.
+        // But isn't that just excactly what the AST would be equivalent to (the parser's output)?
+        // Say that we do that. The scanner outputs a list of unchecked tokens and reports errors if there are
+        // unrecognized vertex types, missing keys, etc.
+        // Then what would the parser do? - Checking graph consistency and semantics is the job of the semantic analyzer
+        // not the parser, so we can't do that...
+        // Traditionally, the parser would take the token stream and do LALR walking and generate an AST. But our AST
+        // (no decorations) _is_ the adjacency list. - maybe the parser step should ensure compileability of the expr
+        // strings? No. That would require a scoped parser, and that is a semantic analyzer thing.
+        // WHAT DOES THE PARSER DO?
+        // 
+        // Okay... Maybe the scanner doesnt output the adjacency list then. The question is then: What thing do we need
+        // to generate an adjacency list? Just a json structure? I mean... The only thing that seems icky about that is
+        // that we would make the compiler dependent on nlohmann, but is that a problem? It would ensure a valid json
+        // syntax. Compared to a traditional scanner, would that fit?
+        //
+        // Let's see. A C scanner would gladly accept this nonsense: hello int "world" void = 2 = = ==
+        // The C parser would say that the token stream is fucking stupid, but that's fine. It's valid scanner input.
+        // Comparatively, if our scanner gets: `{ "hello": 321 }` - that would also be valid scanner input. Again, the
+        // parser will flip it's shit, because that is clearly not a hawk graph.
+        //
+        // I think that is good. - also, welcome to my blog
+        for(const auto& filepath : filepaths) {
+            for(const auto& entry: std::filesystem::directory_iterator(filepath)) {
+                try {
+                    if(should_ignore(entry, ignore_list)) {
+                        spdlog::trace("ignoring file {}", entry.path().c_str());
+                        continue;
+                    }
+
+                    std::ifstream input_filestream(entry.path());
+                    auto json_file = nlohmann::json::parse(input_filestream,
+                            /* callback */ nullptr,
+                            /* allow exceptions */ true,
+                            /* ignore_comments */ true);
+                    if(json_file.contains("name")) {
+                        spdlog::trace("loading file {0}", entry.path().c_str());
+                    } else if(json_file.contains("parts")) {
+                        spdlog::trace("loading parts file {0}", entry.path().c_str());
+                    } else
+                        spdlog::trace("ignoring file {0} (not a valid model file)", entry.path().c_str());
+                } catch (std::exception& e) {
+                    spdlog::error("unable to parse json file {0}: {1}", entry.path().c_str(), e.what());
+                    return std::unexpected(error()); // TODO: Create a real diagnostic
+                }
+            }
+        }
+    }
+
+    auto json_parser_t::parse(compiler& ctx, const std::string& stream) const noexcept -> std::expected<int, error> {
+
+    }
+
+    auto json_parser_t::should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) const -> bool {
+        return std::any_of(ignore_list.begin(), ignore_list.end(),
+                           [&entry, this](const std::string& ig){ return should_ignore(entry, ig); });
+    }
+
+    auto json_parser_t::should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) const -> bool {
+        return std::regex_match(entry.path().c_str(), std::regex{ignore_regex});
+    }
 }
 
 extern "C" {

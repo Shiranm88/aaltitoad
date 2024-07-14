@@ -16,7 +16,7 @@
 cmake_minimum_required(VERSION 3.16) # 3.16+ because of target_precompiled_header
 project(aaltitoad VERSION 1.3.0)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CXX_STANDARD_REQUIRED ON)
 set(SPDLOG_BUILD_SHARED)
 set(CONFIG_IN_FILE src/config.h.in)
@@ -123,6 +123,7 @@ add_library(huppaal_parser SHARED
         src/parser/hawk/scoped_template_builder/scoped_template_builder.cpp
         src/parser/hawk/scoped_template_builder/scoped_interpreter.cpp
         src/parser/hawk/diagnostics.cpp
+        src/parser/hawk/compiler.cpp
         src/parser/hawk/huppaal/parser.cpp)
 target_link_libraries(huppaal_parser PUBLIC aaltitoad expr nlohmann_json::nlohmann_json)
 
@@ -131,6 +132,7 @@ add_library(graphedit_parser SHARED
         src/parser/hawk/scoped_template_builder/scoped_template_builder.cpp
         src/parser/hawk/scoped_template_builder/scoped_interpreter.cpp
         src/parser/hawk/diagnostics.cpp
+        src/parser/hawk/compiler.cpp
         src/parser/hawk/graphedit/parser.cpp
         src/parser/hawk/graphedit/model.cpp)
 target_link_libraries(graphedit_parser PUBLIC aaltitoad expr nlohmann_json::nlohmann_json)

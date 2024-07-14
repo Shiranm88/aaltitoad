@@ -19,6 +19,7 @@
 #define AALTITOAD_HAWK_PARSER_H
 #include "lsp.pb.h"
 #include "plugin_system/parser.h"
+#include "parser/hawk/compiler.h"
 #include <nlohmann/json.hpp>
 
 namespace aaltitoad::hawk::huppaal {
@@ -34,6 +35,18 @@ namespace aaltitoad::hawk::huppaal {
         auto should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) -> bool;
         auto should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) -> bool;
         auto load_part(const nlohmann::json& json_file) -> std::string;
+    };
+
+    class json_parser_t : public scanner_t, aaltitoad::hawk::parser_t {
+    public:
+        ~json_parser_t() override = default;
+        auto scan(compiler& ctx,
+                const std::vector<std::string>& filepaths,
+                const std::vector<std::string>& ignore_list) const noexcept -> std::expected<std::string, error> override;
+        auto parse(compiler& ctx, const std::string& stream) const noexcept -> std::expected<int, error> override;
+    private:
+        auto should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) const -> bool;
+        auto should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) const -> bool;
     };
 }
 
