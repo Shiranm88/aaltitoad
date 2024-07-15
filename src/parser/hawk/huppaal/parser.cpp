@@ -99,7 +99,9 @@ namespace aaltitoad::hawk::huppaal {
         // Comparatively, if our scanner gets: `{ "hello": 321 }` - that would also be valid scanner input. Again, the
         // parser will flip it's shit, because that is clearly not a hawk graph.
         //
-        // I think that is good. - also, welcome to my blog
+        // We could also have a custom token stream format instead, that represents an adjacency list, but then again
+        // why would we do that? To streamline the process, make it more robust and make it easier to extend? - blah!
+        // i.e. a "DSL" representing an annotated graph - what's it called... a Labelled Transition System!
         for(const auto& filepath : filepaths) {
             for(const auto& entry: std::filesystem::directory_iterator(filepath)) {
                 try {
