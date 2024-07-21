@@ -98,10 +98,41 @@ namespace aaltitoad::hawk::huppaal {
         // The C parser would say that the token stream is fucking stupid, but that's fine. It's valid scanner input.
         // Comparatively, if our scanner gets: `{ "hello": 321 }` - that would also be valid scanner input. Again, the
         // parser will flip it's shit, because that is clearly not a hawk graph.
+        // So. The scanner expects valid tokens, and the parser expects that the tokens are sorted in such a manner that
+        // it makes sense as a hawk graph.
         //
         // We could also have a custom token stream format instead, that represents an adjacency list, but then again
         // why would we do that? To streamline the process, make it more robust and make it easier to extend? - blah!
         // i.e. a "DSL" representing an annotated graph - what's it called... a Labelled Transition System!
+        //
+        // If we say that the scanner should output valid "tokens" without any context embedded, then an adjacency list
+        // with "tokens", i.e. nodes, edges and freefloating expressions (symbol declarations) would be the most direct
+        // approach.
+        // This approach would make the `{ "hello": 321 }` example not valid scanner input, since it does not describe
+        // any valid tokens (nodes, edges, declarations).
+        // A minimal, scanner friendly, but not parser friendly input would then be something like (fluctuations in
+        // syntaxes can be addressed by other scanners):
+        // ```json
+        // {
+        //   "declarations": "...",
+        //   "edges": [
+        //      {...}
+        //   ],
+        //   "vertices": [
+        //      {...}
+        //   ]
+        // }
+        // ```
+        // In any case, the output of the scanner is a struct with nodes (vertices), edges and symbol declarations.
+        // Without regard of context consistency.
+        //
+        // Now the question stands: Who should complain about missing json keys? = THE SCANNER, because a missing key in
+        // a vertex is an invalid "token". Not an invalid grammar thing. The parser should complain if the graph is not
+        // a properly defined graph (i.e. the _contents_ of the keys in the vertices are consistent), that could be a 
+        // badly formed (syntactically incorrect) update expression, a non-existent edge source, or even an unrecognized
+        // vertex type (yes, that is the parser's responsibility to check. Not the scanner. Think; scanner checks that
+        // the keys exist, parser checks that the values at least make some sense) - then we can do semantic analysis,
+        // and all that cool optimization magic code!
         for(const auto& filepath : filepaths) {
             for(const auto& entry: std::filesystem::directory_iterator(filepath)) {
                 try {
