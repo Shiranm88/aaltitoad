@@ -2,30 +2,37 @@
 #define AALTITOAD_HAWK_COMPILER_H
 #include "ntta/tta.h"
 #include "parser/hawk/diagnostics.h"
+#include "parser/hawk/model.h"
 #include "symbol_table.h"
 #include <expected>
 #include <string>
 #include <vector>
 
 namespace aaltitoad::hawk {
+    // TODO: How to handle warnings?
     class compiler;
 
     struct error {
-        diagnostic diagnostic;
+        std::vector<diagnostic> diagnostics;
     };
 
     struct scanner_t {
+        struct result_t {
+            std::vector<scanning::template_t> templates;
+            std::vector<diagnostic> diagnostics;
+        };
+
         scanner_t() = default;
         virtual ~scanner_t() = default;
         virtual auto scan(compiler& ctx,
                 const std::vector<std::string>& filepaths,
-                const std::vector<std::string>& ignore_list) const noexcept -> std::expected<std::string, error> = 0;
+                const std::vector<std::string>& ignore_list) const noexcept -> std::expected<result_t, error> = 0;
     };
 
     struct parser_t { 
         parser_t() = default;
         virtual ~parser_t() = default;
-        virtual auto parse(compiler& ctx, const std::string& stream) const noexcept -> std::expected<int, error> = 0;  // TODO: Should be an AST output
+        virtual auto parse(compiler& ctx, const scanner_t::result_t& scanner_result) const noexcept -> std::expected<int, error> = 0;  // TODO: Should be an AST output
     };
 
     struct semantic_analyzer_t {

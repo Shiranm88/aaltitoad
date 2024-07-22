@@ -133,6 +133,18 @@ namespace aaltitoad::hawk::huppaal {
         // vertex type (yes, that is the parser's responsibility to check. Not the scanner. Think; scanner checks that
         // the keys exist, parser checks that the values at least make some sense) - then we can do semantic analysis,
         // and all that cool optimization magic code!
+        //
+        // Now. A HUPPAAL HAWK file's edges will be annotated with guards and updates directly on the edge object, which
+        // is fine and all, but a Graphedit HAWK file's edges are not structured like that. Whom'stve's responsibility
+        // is it to unify these two different ways of modelling? The scanner? Perhaps...
+        // Scanner: 
+        //  - The GrapheditScanner should then translate the edge L--g--u-->L' into [L,L'], [<L,g,u,L'>]. The edge would
+        //      be "recreated", so we should keep track of the original edge identifiers for error reporting.
+        //  - The HUPPAALScanner should probably not do much.
+        //
+        // Parser:
+        //  - The HawkParser should manage two different types of edge management. Yea no. This violates SOLID. The
+        //    platform specific shit should be shoved as far in to the scanner as it can.
         for(const auto& filepath : filepaths) {
             for(const auto& entry: std::filesystem::directory_iterator(filepath)) {
                 try {
