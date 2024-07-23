@@ -143,8 +143,14 @@ namespace aaltitoad::hawk::huppaal {
         //  - The HUPPAALScanner should probably not do much.
         //
         // Parser:
-        //  - The HawkParser should manage two different types of edge management. Yea no. This violates SOLID. The
-        //    platform specific shit should be shoved as far in to the scanner as it can.
+        // This would mean that the scanners won't be outputting the same struct...
+        //
+        // Exploratory:
+        // C:  var a = 3;   -->  <VARKW> <IDENT:a> <EQ> <LIT:3>
+        // GE: L--g--u--L'  -->  [L, g, u, L'] [<Lg>,<gu>,<uL'>] << This could be <Lg:g> :thinking:
+        // HU: LguL'        -->  [L,L'] [<LL':gu>]
+        //
+        // Should <gu> be <gu:gu>, or just <gu:u> ?
         for(const auto& filepath : filepaths) {
             for(const auto& entry: std::filesystem::directory_iterator(filepath)) {
                 try {

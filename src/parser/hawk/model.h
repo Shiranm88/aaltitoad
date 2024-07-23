@@ -14,24 +14,23 @@ namespace aaltitoad::hawk {
         struct vertex {
             std::string identifer;
             std::string type;
+            std::vector<std::string> modifiers; // e.g. "IMMEDIATE", "FINAL"
 
             struct {
                 std::optional<std::string> name;
                 std::optional<position> position;
-                std::optional<std::vector<std::string>> original_identifiers;
             } debug;
         };
 
         struct edge {
             std::string identifier;
             std::string source;
-            std::string guard;
-            std::string update;
+            std::optional<std::string> guard;
+            std::optional<std::string> update;
             std::string target;
 
             struct {
                 std::optional<std::string> name;
-                std::optional<std::vector<std::string>> original_identifiers;
             } debug;
         };
 
@@ -41,6 +40,7 @@ namespace aaltitoad::hawk {
             std::optional<std::string> declarations;
             std::vector<vertex> vertices;
             std::vector<edge> edges;
+            std::vector<std::string> modifiers; // e.g. "MAIN"
 
             struct {
                 std::optional<std::string> name;
@@ -50,21 +50,16 @@ namespace aaltitoad::hawk {
     }
 
     namespace parsing {
-        enum class vertex_type {
-            LOCATION,
-            COMMENT_NAIL,
-            GUARD_NAIL,
-            UPDATE_NAIL
+        enum class location_mod {
+            IMMEDATE,
+            INITIAL,
+            FINAL
         };
 
-        struct vertex {
-            std::string identifer;
-            std::string type;
-
-            struct {
-                std::optional<std::string> name;
-                std::optional<position> position;
-            } debug;
+        enum class vertex_type {
+            LOCATION,
+            INTERMEDIATE,
+            TEMPLATE_INSTANCE
         };
     }
 }
