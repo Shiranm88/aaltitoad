@@ -9,71 +9,75 @@
 #include <vector>
 
 namespace aaltitoad::hawk {
-    // TODO: How to handle warnings?
     class compiler;
 
     struct error {
         std::vector<diagnostic> diagnostics;
     };
 
-    struct scanner_t {
-        struct result_t {
+    struct scanner {
+        struct result {
             std::vector<scanning::template_t> templates;
             std::vector<diagnostic> diagnostics;
         };
 
-        scanner_t() = default;
-        virtual ~scanner_t() = default;
+        scanner() = default;
+        virtual ~scanner() = default;
         virtual auto scan(compiler& ctx,
                 const std::vector<std::string>& filepaths,
-                const std::vector<std::string>& ignore_list) const noexcept -> std::expected<result_t, error> = 0;
+                const std::vector<std::string>& ignore_list) const noexcept -> std::expected<result, error> = 0;
     };
 
-    struct parser_t { 
-        parser_t() = default;
-        virtual ~parser_t() = default;
-        virtual auto parse(compiler& ctx, const scanner_t::result_t& scanner_result) const noexcept -> std::expected<int, error> = 0;  // TODO: Should be an AST output
+    struct parser { 
+        struct result {
+            std::vector<parsing::template_t> templates;
+            std::vector<diagnostic> diagnostics;
+        };
+
+        parser() = default;
+        virtual ~parser() = default;
+        virtual auto parse(compiler& ctx, const scanner::result& scanner_result) const noexcept -> std::expected<result, error> = 0;
     };
 
-    struct semantic_analyzer_t {
-        semantic_analyzer_t() = default;
-        virtual ~semantic_analyzer_t() = default;
-        virtual auto analyze(compiler& ctx, const int& ast) const noexcept -> std::expected<int, error> = 0; // TODO: Should be an ast output
+    struct semantic_analyzer {
+        semantic_analyzer() = default;
+        virtual ~semantic_analyzer() = default;
+        virtual auto analyze(compiler& ctx, const parser::result& ast) const noexcept -> std::expected<parser::result, error> = 0;
     };
 
-    struct optimizer_t {
-        optimizer_t() = default;
-        virtual ~optimizer_t() = default;
-        virtual void optimize(compiler& ctx, int& ast) const = 0;
+    struct optimizer {
+        optimizer() = default;
+        virtual ~optimizer() = default;
+        virtual void optimize(compiler& ctx, parser::result& ast) const = 0;
     };
 
-    struct generator_t {
-        generator_t() = default;
-        virtual ~generator_t() = default;
-        virtual auto generate(compiler& ctx, const int& ast) const noexcept -> std::expected<ntta_t, error> = 0;
+    struct generator {
+        generator() = default;
+        virtual ~generator() = default;
+        virtual auto generate(compiler& ctx, const parser::result& ast) const noexcept -> std::expected<ntta_t, error> = 0;
     };
 
     class compiler {
     public:
         compiler(
-                std::unique_ptr<scanner_t>&& scanner,
-                std::unique_ptr<parser_t>&& parser,
-                std::unique_ptr<semantic_analyzer_t>&& analyzer,
-                std::unique_ptr<optimizer_t>&& optimizer,
-                std::unique_ptr<generator_t>&& generator);
+                std::unique_ptr<scanner>&& scanner,
+                std::unique_ptr<parser>&& parser,
+                std::unique_ptr<semantic_analyzer>&& analyzer,
+                std::unique_ptr<optimizer>&& optimizer,
+                std::unique_ptr<generator>&& generator);
         void add_symbols(const expr::symbol_table_t& symbols);
         void clear_symbols();
         auto get_diagnostic_factory() -> diagnostic_factory&;
         auto compile(const std::vector<std::string>& paths, const std::vector<std::string>& ignore_list) -> std::expected<ntta_t, error>;
 
     private:
-        std::unique_ptr<scanner_t> scanner;
-        std::unique_ptr<parser_t> parser;
-        std::unique_ptr<semantic_analyzer_t> analyzer;
-        std::unique_ptr<optimizer_t> optimizer;
-        std::unique_ptr<generator_t> generator;
+        std::unique_ptr<scanner> _scanner;
+        std::unique_ptr<parser> _parser;
+        std::unique_ptr<semantic_analyzer> _analyzer;
+        std::unique_ptr<optimizer> _optimizer;
+        std::unique_ptr<generator> _generator;
         expr::symbol_table_t symbols;
-        diagnostic_factory diagnostic_factory;
+        diagnostic_factory _diagnostic_factory;
     };
 }
 

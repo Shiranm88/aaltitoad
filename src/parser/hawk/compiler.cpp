@@ -3,19 +3,19 @@
 
 namespace aaltitoad::hawk {
     compiler::compiler(
-            std::unique_ptr<scanner_t>&& scanner,
-            std::unique_ptr<parser_t>&& parser,
-            std::unique_ptr<semantic_analyzer_t>&& analyzer,
-            std::unique_ptr<optimizer_t>&& optimizer,
-            std::unique_ptr<generator_t>&& generator)
+            std::unique_ptr<scanner>&& _scanner,
+            std::unique_ptr<parser>&& _parser,
+            std::unique_ptr<semantic_analyzer>&& _analyzer,
+            std::unique_ptr<optimizer>&& _optimizer,
+            std::unique_ptr<generator>&& _generator)
         : 
-            scanner{std::move(scanner)},
-            parser{std::move(parser)},
-            analyzer{std::move(analyzer)},
-            optimizer{std::move(optimizer)},
-            generator{std::move(generator)},
+            _scanner{std::move(_scanner)},
+            _parser{std::move(_parser)},
+            _analyzer{std::move(_analyzer)},
+            _optimizer{std::move(_optimizer)},
+            _generator{std::move(_generator)},
             symbols{},
-            diagnostic_factory{} {
+            _diagnostic_factory{} {
     }
 
     void compiler::add_symbols(const expr::symbol_table_t& symbols) {
@@ -27,17 +27,17 @@ namespace aaltitoad::hawk {
     }
 
     auto compiler::compile(const std::vector<std::string>& paths, const std::vector<std::string>& ignore_list) -> std::expected<ntta_t, error> {
-        auto stream = scanner->scan(*this, paths, ignore_list);
+        auto stream = _scanner->scan(*this, paths, ignore_list);
         if(!stream)
             return std::unexpected{stream.error()};
-        auto ast = parser->parse(*this, stream.value());
+        auto ast = _parser->parse(*this, stream.value());
         if(!ast)
             return std::unexpected{ast.error()};
-        auto dast_r = analyzer->analyze(*this, ast.value());
+        auto dast_r = _analyzer->analyze(*this, ast.value());
         if(!dast_r)
             return std::unexpected{dast_r.error()};
         auto dast = dast_r.value();
-        optimizer->optimize(*this, dast);
-        return generator->generate(*this, dast);
+        _optimizer->optimize(*this, dast);
+        return _generator->generate(*this, dast);
     }
 }
