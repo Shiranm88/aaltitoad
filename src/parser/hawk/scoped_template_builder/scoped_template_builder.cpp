@@ -230,10 +230,9 @@ namespace aaltitoad::hawk {
         }
     }
 
-    auto scoped_template_builder::error() const -> plugin::parse_result {
+    auto scoped_template_builder::error() const -> plugin::parse_error {
         return {
             .diagnostics=diagnostics,
-            .result={}
         };
     }
 
@@ -241,10 +240,10 @@ namespace aaltitoad::hawk {
         auto main_it = std::find_if(templates.begin(), templates.end(),[](const auto& t){ return t.second.is_main; });
         if(main_it == templates.end()) {
             diagnostics.push_back(diag_factory.without_context().create_diagnostic(no_main_template));
-            return error();
+            return std::unexpected(error());
         }
         if(has_infinite_recursion_in_dependencies(main_it->first))
-            return error();
+            return std::unexpected(error());
         tta_instance_t t{.id=main_it->first,
                                 .tta_template_name=main_it->first,
                                 .invocation=main_it->first};
@@ -256,9 +255,9 @@ namespace aaltitoad::hawk {
         instantiate_tta_recursively(t, "", builder); // TODO: prune duplicates
         builder.add_symbols(internal_symbols);
         builder.add_external_symbols(external_symbols);
-        return {
-            .diagnostics=diagnostics,
-            .result=std::unique_ptr<ntta_t>{builder.build_heap()}
+        return plugin::parse_ok{
+            .ntta=std::unique_ptr<ntta_t>{builder.build_heap()},
+            .diagnostics=diagnostics
         };
     }
 

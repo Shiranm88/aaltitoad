@@ -121,11 +121,10 @@ auto get_ntta(const std::vector<std::string>& plugin_dirs, const std::vector<std
     auto p = std::get<parser_ctor_t>(available_plugins.at(parser).function)();
     ya::timer<unsigned int> t{};
     auto parse_result = p->parse_files(input, ignore_list);
-    for(auto& diagnostic : parse_result.diagnostics)
-        aaltitoad::warnings::print_diagnostic(diagnostic);
-    if(!parse_result.result.has_value())
+    aaltitoad::warnings::print_warnings(parse_result);
+    if(!parse_result.has_value())
         throw std::logic_error("compilation failed");
-    auto automata = std::move(parse_result.result.value());
+    auto automata = std::move(parse_result.value().ntta);
     spdlog::trace("model parsing took {0}ms", t.milliseconds_elapsed());
     return automata;
 }

@@ -93,4 +93,13 @@ namespace aaltitoad {
                 break;
         }
     }
+
+    void warnings::print_warnings(const plugin::parse_result& parse_result) {
+        if(parse_result.has_value())
+            for(auto& d : parse_result.value().diagnostics)
+                print_diagnostic(d);
+        else
+            for(auto& d : parse_result.error().diagnostics)
+                print_diagnostic(d);
+    }
 }

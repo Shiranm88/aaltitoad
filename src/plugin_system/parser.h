@@ -3,12 +3,19 @@
 #include "lsp.pb.h"
 #include "ntta/tta.h"
 #include <memory>
+#include <expected>
 
 namespace aaltitoad::plugin {
-    struct parse_result {
+    struct parse_error {
         std::vector<Diagnostic> diagnostics;
-        std::optional<std::unique_ptr<ntta_t>> result;
     };
+
+    struct parse_ok {
+        ntta_t ntta;
+        std::vector<Diagnostic> diagnostics;
+    };
+
+    using parse_result = std::expected<parse_ok, parse_error>;
 
     class parser {
     public:

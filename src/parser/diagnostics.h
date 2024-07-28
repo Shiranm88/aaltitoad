@@ -2,7 +2,7 @@
 #define AALTITOAD_HAWK_DIAGNOSTICS_H
 #include "lsp.pb.h"
 
-namespace aaltitoad::hawk {
+namespace aaltitoad {
     struct diagnostic {
         std::string identifier;
         std::string title;

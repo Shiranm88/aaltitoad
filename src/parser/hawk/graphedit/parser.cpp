@@ -17,7 +17,7 @@
  */
 #include "lsp.pb.h"
 #include "parser.h"
-#include "parser/hawk/diagnostics.h"
+#include "parser/diagnostics.h"
 #include "parser/hawk/scoped_template_builder/scoped_template_builder.h"
 #include "plugin_system/plugin_system.h"
 #include "util/string_extensions.h"
@@ -108,9 +108,12 @@ namespace aaltitoad::hawk::graphedit {
                     }
                     // TODO: verify that the model key is the entry.path().
                     auto result = compile_model(model, entry.path());
-                    diagnostics.insert(result.diagnostics.begin(), result.diagnostics.end(), diagnostics.end());
-                    if(result.result.has_value())
-                        builder.add_template(result.result.value());
+                    if(!result.has_value()) {
+                        diagnostics.insert(result.error().diagnostics.begin(), result.error().diagnostics.end(), diagnostics.end());
+                        continue;
+                    }
+                    diagnostics.insert(result.value().diagnostics.begin(), result.value().diagnostics.end(), diagnostics.end());
+                    builder.add_template(result.value().tta);
                 } catch (std::exception& e) {
                     spdlog::error("unable to parse json file {0}: {1}", entry.path().c_str(), e.what());
                     diagnostics.push_back(diag_factory
@@ -122,7 +125,10 @@ namespace aaltitoad::hawk::graphedit {
         }
         spdlog::trace("building the ntta_t");
         auto result = builder.build();
-        result.diagnostics.insert(result.diagnostics.end(), diagnostics.begin(), diagnostics.end());
+        if(result.has_value())
+            result.value().diagnostics.insert(result.value().diagnostics.end(), diagnostics.begin(), diagnostics.end());
+        else
+            result.error().diagnostics.insert(result.error().diagnostics.end(), diagnostics.begin(), diagnostics.end());
         return result;
     }
 
@@ -137,14 +143,13 @@ namespace aaltitoad::hawk::graphedit {
 
     auto parser::parse_model(const Buffer& buffer) -> plugin::parse_result {
         ya::timer<unsigned int> t{};
-        spdlog::debug("parsing buffer");
+        spdlog::trace("parsing buffer: {}", buffer.path());
         hawk::scoped_template_builder builder{};
         auto result = compile_model(to_model(buffer), buffer.path());
-        spdlog::debug("parse result had {} diagnostics", result.diagnostics.size());
-        if(!result.result.has_value())
-            return {result.diagnostics, {}};
-        builder.add_diagnostics(result.diagnostics);
-        builder.add_template(result.result.value());
+        if(!result.has_value())
+            return std::unexpected(plugin::parse_error{result.error().diagnostics});
+        builder.add_diagnostics(result.value().diagnostics);
+        builder.add_template(result.value().tta);
         // TODO: Expressions with non-existent identifier references will compile just fine.
         //       Add a check that ensures that all identifiers in all expressions are available in the tta network tree
         spdlog::debug("buffer parsing took {}ms", t.milliseconds_elapsed());
@@ -366,16 +371,15 @@ namespace aaltitoad::hawk::graphedit {
                 ;
             if(fail_condition) {
                 spdlog::error("compilation failed");
-                return {
+                return std::unexpected(compile_error{
                     .diagnostics=diagnostics,
-                    .result={}
-                };
+                });
             }
             auto is_main = model.metadata.contains("is_main") && lower_case(model.metadata.at("is_main")) == "true";
             auto model_name = model.metadata.contains("name") ? model.metadata.at("name") : model_key;
-            return {
+            return compile_ok{
                 .diagnostics=diagnostics,
-                .result=tta_template{
+                .tta=tta_template{
                     .name=model_name,
                     .declarations=model.syntax.declarations,
                     .is_main=is_main,
@@ -388,10 +392,9 @@ namespace aaltitoad::hawk::graphedit {
             };
         } catch(std::exception& e) {
             spdlog::error("compilation error: {}", e.what());
-            return {
+            return std::unexpected(compile_error{
                 .diagnostics=diagnostics,
-                .result={}
-            };
+            });
         }
     }
 }

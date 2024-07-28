@@ -2,6 +2,15 @@
 #include <overload>
 
 namespace aaltitoad::hawk {
+    auto not_implemented_yet() -> diagnostic {
+        return diagnostic{
+        .identifier="not_implemented_yet",
+        .title="Function not implemented yet",
+        .message="The called function is not implemented yet",
+        .description="The function is not able to be called and is not implemented yet.",
+        .severity=Severity::SEVERITY_ERROR};
+    }
+
     compiler::compiler(
             std::unique_ptr<scanner>&& _scanner,
             std::unique_ptr<parser>&& _parser,
@@ -26,7 +35,7 @@ namespace aaltitoad::hawk {
         symbols.clear();
     }
 
-    auto compiler::compile(const std::vector<std::string>& paths, const std::vector<std::string>& ignore_list) -> std::expected<ntta_t, error> {
+    auto compiler::compile(const std::vector<std::string>& paths, const std::vector<std::string>& ignore_list) -> std::expected<ok, error_t> {
         auto stream = _scanner->scan(*this, paths, ignore_list);
         if(!stream)
             return std::unexpected{stream.error()};
@@ -38,6 +47,24 @@ namespace aaltitoad::hawk {
             return std::unexpected{dast_r.error()};
         auto dast = dast_r.value();
         _optimizer->optimize(*this, dast);
-        return _generator->generate(*this, dast);
+        auto ntta = _generator->generate(*this, dast);
+        if(!ntta)
+            return std::unexpected(ntta.error());
+        return ok{
+            ntta.value(),
+            dast.diagnostics
+        };
     }
+
+    auto compiler::get_diagnostic_factory() -> diagnostic_factory& {
+        return _diagnostic_factory;
+    }
+
+    auto compiler::diag(const diagnostic& d) -> Diagnostic {
+        return get_diagnostic_factory().without_context().create_diagnostic(d);
+    }
+
+    error_t::error_t() : diagnostics{} {}
+
+    error_t::error_t(const std::vector<Diagnostic>& diagnostics) : diagnostics{diagnostics} {}
 }

@@ -24,11 +24,8 @@
 #include "plugin_system/plugin_system.h"
 
 namespace aaltitoad::hawk::huppaal {
-    parser::parser() {
-
-    }
-
-    auto parser::parse_files(const std::vector<std::string>& filepaths, const std::vector<std::string> &ignore_list) -> plugin::parse_result {
+    auto huppaal_scanner::scan(compiler& ctx, const std::vector<std::string>& filepaths, const std::vector<std::string>& ignore_list) const noexcept -> std::expected<scanner::ok, error_t> {
+        return std::unexpected(error_t({ctx.diag(not_implemented_yet())}));
         scoped_template_builder builder{};
         for(const auto& filepath : filepaths) {
             for(const auto &entry: std::filesystem::directory_iterator(filepath)) {
@@ -57,63 +54,34 @@ namespace aaltitoad::hawk::huppaal {
                 }
             }
         }
-        spdlog::trace("building the ntta_t");
-        return builder.build();
+    }
+
+    auto huppaal_scanner::should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) const -> bool {
+        return std::any_of(ignore_list.begin(), ignore_list.end(),
+                           [&entry, this](const std::string& ig){ return should_ignore(entry, ig); });
+    }
+
+    auto huppaal_scanner::should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) const -> bool {
+        return std::regex_match(entry.path().c_str(), std::regex{ignore_regex});
+    }
+    
+    auto huppaal_parser::parse(compiler& ctx, const scanner::ok& stream) const noexcept -> std::expected<parser::ok, error_t> {
+        return std::unexpected(error_t({ctx.diag(not_implemented_yet())}));
+    }
+
+    parser::parser() : compiler{} {
+        
+    }
+
+    auto parser::parse_files(const std::vector<std::string>& files, const std::vector<std::string>& ignore_patterns) -> plugin::parse_result {
+        auto compile_result = compiler->compile(files, ignore_patterns);
+        if(!compile_result.has_value())
+            return std::unexpected(plugin::parse_error{compile_result.error().diagnostics});
+        return plugin::parse_ok{compile_result.value().ntta, compile_result.value().diagnostics};
     }
 
     auto parser::parse_model(const Buffer& buffer) -> plugin::parse_result {
-        spdlog::error("parsing model buffers not supported yet");
-        throw std::logic_error{"parsing model buffers not supported yet"};
-    }
-
-    auto parser::should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) -> bool {
-        return std::any_of(ignore_list.begin(), ignore_list.end(),
-                           [&entry, this](const std::string& ig){ return should_ignore(entry, ig); });
-    }
-
-    auto parser::should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) -> bool {
-        return std::regex_match(entry.path().c_str(), std::regex{ignore_regex});
-    }
-
-    auto json_parser_t::scan(compiler& ctx, const std::vector<std::string>& filepaths, const std::vector<std::string>& ignore_list) const noexcept -> std::expected<std::string, error> {
-        for(const auto& filepath : filepaths) {
-            for(const auto& entry: std::filesystem::directory_iterator(filepath)) {
-                try {
-                    if(should_ignore(entry, ignore_list)) {
-                        spdlog::trace("ignoring file {}", entry.path().c_str());
-                        continue;
-                    }
-
-                    std::ifstream input_filestream(entry.path());
-                    auto json_file = nlohmann::json::parse(input_filestream,
-                            /* callback */ nullptr,
-                            /* allow exceptions */ true,
-                            /* ignore_comments */ true);
-                    if(json_file.contains("name")) {
-                        spdlog::trace("loading file {0}", entry.path().c_str());
-                    } else if(json_file.contains("parts")) {
-                        spdlog::trace("loading parts file {0}", entry.path().c_str());
-                    } else
-                        spdlog::trace("ignoring file {0} (not a valid model file)", entry.path().c_str());
-                } catch (std::exception& e) {
-                    spdlog::error("unable to parse json file {0}: {1}", entry.path().c_str(), e.what());
-                    return std::unexpected(error()); // TODO: Create a real diagnostic
-                }
-            }
-        }
-    }
-
-    auto json_parser_t::parse(compiler& ctx, const std::string& stream) const noexcept -> std::expected<int, error> {
-
-    }
-
-    auto json_parser_t::should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) const -> bool {
-        return std::any_of(ignore_list.begin(), ignore_list.end(),
-                           [&entry, this](const std::string& ig){ return should_ignore(entry, ig); });
-    }
-
-    auto json_parser_t::should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) const -> bool {
-        return std::regex_match(entry.path().c_str(), std::regex{ignore_regex});
+        return std::unexpected(plugin::parse_error({compiler->diag(not_implemented_yet())}));
     }
 }
 

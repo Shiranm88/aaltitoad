@@ -17,7 +17,6 @@
  */
 #ifndef AALTITOAD_HAWK_PARSER_H
 #define AALTITOAD_HAWK_PARSER_H
-#include "lsp.pb.h"
 #include "plugin_system/parser.h"
 #include "parser/hawk/compiler.h"
 #include <nlohmann/json.hpp>
@@ -25,28 +24,31 @@
 namespace aaltitoad::hawk::huppaal {
     auto create_parser() -> plugin::parser*;
 
+    class huppaal_scanner : public aaltitoad::hawk::scanner{
+    public:
+        ~huppaal_scanner() override = default;
+        auto scan(compiler& ctx,
+                const std::vector<std::string>& filepaths,
+                const std::vector<std::string>& ignore_list) const noexcept -> std::expected<scanner::ok, error_t> override;
+    private:
+        auto should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) const -> bool;
+        auto should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) const -> bool;
+    };
+
+    class huppaal_parser : public aaltitoad::hawk::parser {
+    public:
+        ~huppaal_parser() override = default;
+        auto parse(compiler& ctx, const scanner::ok& stream) const noexcept -> std::expected<parser::ok, error_t> override;
+    };
+
     class parser : public plugin::parser {
     public:
         parser();
         ~parser() override = default;
-        auto parse_files(const std::vector<std::string>& filepaths, const std::vector<std::string> &ignore_list) -> plugin::parse_result override;
+        auto parse_files(const std::vector<std::string>& files, const std::vector<std::string>& ignore_patterns) -> plugin::parse_result override;
         auto parse_model(const Buffer& buffer) -> plugin::parse_result override;
     private:
-        auto should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) -> bool;
-        auto should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) -> bool;
-        auto load_part(const nlohmann::json& json_file) -> std::string;
-    };
-
-    class json_parser_t : public scanner, aaltitoad::hawk::parser {
-    public:
-        ~json_parser_t() override = default;
-        auto scan(compiler& ctx,
-                const std::vector<std::string>& filepaths,
-                const std::vector<std::string>& ignore_list) const noexcept -> std::expected<scanner::result, error> override;
-        auto parse(compiler& ctx, const scanner::result& stream) const noexcept -> std::expected<parser::result, error> override;
-    private:
-        auto should_ignore(const std::filesystem::directory_entry& entry, const std::vector<std::string>& ignore_list) const -> bool;
-        auto should_ignore(const std::filesystem::directory_entry& entry, const std::string& ignore_regex) const -> bool;
+        std::unique_ptr<compiler> compiler;
     };
 }
 

@@ -72,6 +72,8 @@ namespace aaltitoad::lsp::proto {
         void progress(const ProgressReportType& type, const std::string& message);
         void notify(const NotificationLevel& level, const std::string& message);
         void diagnostic(const std::vector<Diagnostic>& diags);
+
+        void diagnostic(const plugin::parse_result& res);
     };
 }
 

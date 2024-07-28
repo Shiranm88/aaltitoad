@@ -117,13 +117,12 @@ int main(int argc, char** argv) {
     ya::timer<unsigned int> t{};
     auto parse_result = p->parse_files(input, ignore);
     spdlog::trace("model parsing took {0}ms", t.milliseconds_elapsed());
-    for(auto& diagnostic : parse_result.diagnostics)
-        aaltitoad::warnings::print_diagnostic(diagnostic);
-    if(!parse_result.result.has_value()) {
+    aaltitoad::warnings::print_warnings(parse_result);
+    if(!parse_result.has_value()) {
         spdlog::error("compilation failed");
         return 1;
     }
-    auto automata = std::move(parse_result.result.value());
+    auto automata = std::move(parse_result.value().ntta);
 
     /// Inject tockers - CLI Format: "name(argument)"
     for(auto& arg : tockers) {

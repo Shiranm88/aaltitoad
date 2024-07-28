@@ -19,7 +19,7 @@
 #define AALTITOAD_SCOPED_TEMPLATE_BUILDER_H
 #include "lsp.pb.h"
 #include "model.h"
-#include "parser/hawk/diagnostics.h"
+#include "parser/diagnostics.h"
 #include "plugin_system/parser.h"
 #include "scoped_interpreter.h"
 #include <ntta/builder/ntta_builder.h>
@@ -51,7 +51,7 @@ namespace aaltitoad::hawk {
         auto has_infinite_recursion_in_dependencies(const std::string& main_template) -> bool;
         auto get_invocation_arguments(const tta_instance_t& instance, scoped_interpreter& interpreter) -> std::vector<expr::symbol_value_t>;
         auto get_invocation_parameters(const tta_instance_t& instance) -> std::optional<std::vector<std::string>>;
-        auto error() const -> plugin::parse_result;
+        auto error() const -> plugin::parse_error;
     };
 }
 

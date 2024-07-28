@@ -25,10 +25,16 @@
 namespace aaltitoad::hawk::graphedit {
     auto create_parser() -> plugin::parser*;
 
-    struct compile_result {
+    struct compile_ok {
         std::vector<Diagnostic> diagnostics;
-        std::optional<tta_template> result;
+        tta_template tta;
     };
+
+    struct compile_error {
+        std::vector<Diagnostic> diagnostics;
+    };
+
+    using compile_result = std::expected<compile_ok, compile_error>;
 
     class parser : public plugin::parser {
     public:

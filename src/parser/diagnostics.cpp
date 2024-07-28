@@ -1,6 +1,6 @@
 #include "diagnostics.h"
 
-namespace aaltitoad::hawk {
+namespace aaltitoad {
     auto diagnostic_factory::with_model_key(const std::string& key) -> diagnostic_factory& {
         model_key = key;
         return *this;

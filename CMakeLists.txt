@@ -67,7 +67,9 @@ add_library(${PROJECT_NAME} SHARED
     src/verification/ctl/ctl_sat.cpp
     src/util/warnings.cpp
     src/util/random.cpp
-    src/util/string_extensions.cpp)
+    src/util/string_extensions.cpp
+    src/parser/diagnostics.cpp
+)
 target_link_libraries(${PROJECT_NAME} PUBLIC expr_lang dl pthread ctl_lang graphedit_proto)
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_BINARY_DIR}
@@ -118,24 +120,25 @@ add_executable(${PROJECT_NAME}-lsp
     src/cli/lsp/main.cpp
     src/cli/lsp/lsp_server.cpp
 )
+
+add_library(hawk STATIC
+    src/parser/hawk/compiler.cpp
+    src/parser/hawk/scoped_template_builder/model.cpp
+    src/parser/hawk/scoped_template_builder/scoped_template_builder.cpp
+    src/parser/hawk/scoped_template_builder/scoped_interpreter.cpp
+)
+target_link_libraries(hawk PUBLIC aaltitoad expr nlohmann_json::nlohmann_json)
+
 add_library(huppaal_parser SHARED
-        src/parser/hawk/scoped_template_builder/model.cpp
-        src/parser/hawk/scoped_template_builder/scoped_template_builder.cpp
-        src/parser/hawk/scoped_template_builder/scoped_interpreter.cpp
-        src/parser/hawk/diagnostics.cpp
-        src/parser/hawk/compiler.cpp
-        src/parser/hawk/huppaal/parser.cpp)
-target_link_libraries(huppaal_parser PUBLIC aaltitoad expr nlohmann_json::nlohmann_json)
+    src/parser/hawk/huppaal/parser.cpp
+)
+target_link_libraries(huppaal_parser PUBLIC hawk)
 
 add_library(graphedit_parser SHARED
-        src/parser/hawk/scoped_template_builder/model.cpp
-        src/parser/hawk/scoped_template_builder/scoped_template_builder.cpp
-        src/parser/hawk/scoped_template_builder/scoped_interpreter.cpp
-        src/parser/hawk/diagnostics.cpp
-        src/parser/hawk/compiler.cpp
         src/parser/hawk/graphedit/parser.cpp
-        src/parser/hawk/graphedit/model.cpp)
-target_link_libraries(graphedit_parser PUBLIC aaltitoad expr nlohmann_json::nlohmann_json)
+        src/parser/hawk/graphedit/model.cpp
+)
+target_link_libraries(graphedit_parser PUBLIC hawk)
 
 install(TARGETS huppaal_parser graphedit_parser DESTINATION lib)
 

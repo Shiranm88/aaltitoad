@@ -63,9 +63,9 @@ namespace aaltitoad::lsp::proto {
             exclude_files.reserve(project->excludefiles().size());
             for(auto& ef : project->excludefiles())
                 exclude_files.push_back(ef.c_str());
-            auto new_ntta = parser->parse_files({project->path()}, exclude_files);
-            diagnostic(new_ntta.diagnostics);
-            if(new_ntta.result.has_value())
+            auto parse_result = parser->parse_files({project->path()}, exclude_files);
+            diagnostic(parse_result);
+            if(parse_result.has_value())
                 progress_end("success");
             else
                 progress_end_fail("parser error");
@@ -80,9 +80,9 @@ namespace aaltitoad::lsp::proto {
     auto LanguageServerImpl::BufferCreated(grpc::ServerContext* server_context, const Buffer* buffer, Empty* result) -> grpc::Status {
         try {
             progress_start("compiling buffer: " + buffer->path());
-            auto new_ntta = parser->parse_model(*buffer);
-            diagnostic(new_ntta.diagnostics);
-            if(new_ntta.result.has_value())
+            auto parse_result = parser->parse_model(*buffer);
+            diagnostic(parse_result);
+            if(parse_result.has_value())
                 progress_end("success");
             else
                 progress_end_fail("parser error");
@@ -102,9 +102,9 @@ namespace aaltitoad::lsp::proto {
     auto LanguageServerImpl::HandleChange(grpc::ServerContext* server_context, const Buffer* buffer, Empty* result) -> grpc::Status {
         try {
             progress_start("compiling buffer: " + buffer->path());
-            auto new_ntta = parser->parse_model(*buffer);
-            diagnostic(new_ntta.diagnostics);
-            if(new_ntta.result.has_value())
+            auto parse_result = parser->parse_model(*buffer);
+            diagnostic(parse_result);
+            if(parse_result.has_value())
                 progress_end("success");
             else
                 progress_end_fail("parser error");
@@ -225,5 +225,12 @@ namespace aaltitoad::lsp::proto {
             notify_trace(ss.str());
         }
         diagnostics_callback.value()(l); 
+    }
+
+    void LanguageServerImpl::diagnostic(const plugin::parse_result& res) {
+        if(res.has_value())
+            diagnostic(res.value().diagnostics);
+        else
+            diagnostic(res.error().diagnostics);
     }
 }

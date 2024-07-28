@@ -133,14 +133,13 @@ int main(int argc, char** argv) {
         auto p = std::get<parser_ctor_t>(available_plugins.at(parser).function)();
         ya::timer<int> t{};
         auto parse_result = p->parse_files(input, ignore);
-        for(auto& diagnostic : parse_result.diagnostics)
-            aaltitoad::warnings::print_diagnostic(diagnostic);
-        if(!parse_result.result.has_value()) {
+        aaltitoad::warnings::print_warnings(parse_result);
+        if(!parse_result.has_value()) {
             spdlog::error("compilation failed");
             return 1;
         }
 
-        auto n = std::move(parse_result.result.value());
+        auto n = std::move(parse_result.value().ntta);
         trace_log_ntta(*n);
         spdlog::debug("model parsing took {0}ms", t.milliseconds_elapsed());
 
