@@ -139,13 +139,13 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        auto n = std::move(parse_result.value().ntta);
-        trace_log_ntta(*n);
+        auto n = parse_result.value().ntta;
+        trace_log_ntta(n);
         spdlog::debug("model parsing took {0}ms", t.milliseconds_elapsed());
 
         t.start();
         std::vector<ctl::syntax_tree_t> queries{};
-        aaltitoad::ctl_interpreter ctl_compiler{n->symbols, n->external_symbols};
+        aaltitoad::ctl_interpreter ctl_compiler{n.symbols, n.external_symbols};
         for(auto& q : query) {
             spdlog::trace("compiling query '{0}'", q);
             auto qq = ctl_compiler.compile(q);
@@ -155,7 +155,7 @@ int main(int argc, char** argv) {
         }
         for(auto& f : query_files) {
             spdlog::trace("loading queries in file {0}", f);
-            auto json_queries = aaltitoad::load_query_json_file(f, {n->symbols, n->external_symbols});
+            auto json_queries = aaltitoad::load_query_json_file(f, {n.symbols, n.external_symbols});
             queries.insert(queries.end(), json_queries.begin(), json_queries.end());
         }
         spdlog::debug("query parsing took {0}ms", t.milliseconds_elapsed());
@@ -163,11 +163,11 @@ int main(int argc, char** argv) {
         auto strategy = magic_enum::enum_cast<aaltitoad::pick_strategy>(pick_strategy).value_or(aaltitoad::pick_strategy::first);
         spdlog::debug("using pick strategy '{0}'", magic_enum::enum_name(strategy));
 
-        n->add_tocker(std::make_unique<aaltitoad::interesting_tocker>());
+        n.add_tocker(std::make_unique<aaltitoad::interesting_tocker>());
         spdlog::trace("starting reachability search for {0} queries", queries.size());
         t.start();
         aaltitoad::forward_reachability_searcher frs{strategy};
-        auto results = frs.is_reachable(*n, queries);
+        auto results = frs.is_reachable(n, queries);
         spdlog::info("reachability search took {0}ms", t.milliseconds_elapsed());
 
         // open the results file (std::cout by default)

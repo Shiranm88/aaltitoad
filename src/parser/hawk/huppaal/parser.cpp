@@ -65,23 +65,41 @@ namespace aaltitoad::hawk::huppaal {
         return std::regex_match(entry.path().c_str(), std::regex{ignore_regex});
     }
     
+    /* =========== */
+
     auto huppaal_parser::parse(compiler& ctx, const scanner::ok& stream) const noexcept -> std::expected<parser::ok, error_t> {
         return std::unexpected(error_t({ctx.diag(not_implemented_yet())}));
     }
 
-    parser::parser() : compiler{} {
-        
+    /* =========== */
+
+    auto huppaal_semantic_analyzer::analyze(compiler& ctx, const aaltitoad::hawk::parser::ok& ast) const noexcept -> std::expected<aaltitoad::hawk::parser::ok, error_t> {
+        return std::unexpected(error_t({ctx.diag(not_implemented_yet())}));
     }
 
+    /* =========== */
+
+    auto huppaal_generator::generate(compiler& ctx, const aaltitoad::hawk::parser::ok& ast) const noexcept -> std::expected<ntta_t, error_t> {
+        return std::unexpected(error_t({ctx.diag(not_implemented_yet())}));
+    }
+
+    /* =========== */
+
     auto parser::parse_files(const std::vector<std::string>& files, const std::vector<std::string>& ignore_patterns) -> plugin::parse_result {
-        auto compile_result = compiler->compile(files, ignore_patterns);
+        auto compiler = create_compiler();
+        auto compile_result = compiler.compile(files, ignore_patterns);
         if(!compile_result.has_value())
             return std::unexpected(plugin::parse_error{compile_result.error().diagnostics});
         return plugin::parse_ok{compile_result.value().ntta, compile_result.value().diagnostics};
     }
 
     auto parser::parse_model(const Buffer& buffer) -> plugin::parse_result {
-        return std::unexpected(plugin::parse_error({compiler->diag(not_implemented_yet())}));
+        auto compiler = create_compiler();
+        return std::unexpected(plugin::parse_error{std::vector<Diagnostic>{compiler.diag(not_implemented_yet())}});
+    }
+
+    auto parser::create_compiler() -> compiler {
+        return compiler{_scanner, _parser, _semantic_analyzer, _optimizer, _generator};
     }
 }
 

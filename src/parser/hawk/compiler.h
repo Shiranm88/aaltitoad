@@ -1,3 +1,20 @@
+/**
+ * aaltitoad - a verification engine for tick tock automata models
+   Copyright (C) 2023 Asger Gitz-Johansen
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 #ifndef AALTITOAD_HAWK_COMPILER_H
 #define AALTITOAD_HAWK_COMPILER_H
 #include "ntta/tta.h"
@@ -58,6 +75,12 @@ namespace aaltitoad::hawk {
         virtual void optimize(compiler& ctx, parser::ok& ast) const = 0;
     };
 
+    class nothing_optimizer : public optimizer {
+    public:
+        ~nothing_optimizer() override = default;
+        void optimize(compiler& ctx, parser::ok& ast) const override;
+    };
+
     struct generator {
         generator() = default;
         virtual ~generator() = default;
@@ -71,12 +94,8 @@ namespace aaltitoad::hawk {
             std::vector<Diagnostic> diagnostics;
         };
 
-        compiler(
-                std::unique_ptr<scanner>&& scanner,
-                std::unique_ptr<parser>&& parser,
-                std::unique_ptr<semantic_analyzer>&& analyzer,
-                std::unique_ptr<optimizer>&& optimizer,
-                std::unique_ptr<generator>&& generator);
+        compiler(scanner& scanner);
+        compiler(scanner& scanner, parser& parser, semantic_analyzer& analyzer, optimizer& optimizer, generator& generator);
         void add_symbols(const expr::symbol_table_t& symbols);
         void clear_symbols();
         auto get_diagnostic_factory() -> diagnostic_factory&;
@@ -84,11 +103,11 @@ namespace aaltitoad::hawk {
         auto compile(const std::vector<std::string>& paths, const std::vector<std::string>& ignore_list) -> std::expected<ok, error_t>;
 
     private:
-        std::unique_ptr<scanner> _scanner;
-        std::unique_ptr<parser> _parser;
-        std::unique_ptr<semantic_analyzer> _analyzer;
-        std::unique_ptr<optimizer> _optimizer;
-        std::unique_ptr<generator> _generator;
+        scanner& _scanner;
+        parser& _parser;
+        semantic_analyzer& _analyzer;
+        optimizer& _optimizer;
+        generator& _generator;
         expr::symbol_table_t symbols;
         diagnostic_factory _diagnostic_factory;
     };

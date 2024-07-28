@@ -256,7 +256,7 @@ namespace aaltitoad::hawk {
         builder.add_symbols(internal_symbols);
         builder.add_external_symbols(external_symbols);
         return plugin::parse_ok{
-            .ntta=std::unique_ptr<ntta_t>{builder.build_heap()},
+            .ntta=builder.build(),
             .diagnostics=diagnostics
         };
     }

@@ -34,9 +34,9 @@ SCENARIO("parsing fischer-n suite", "[hawk_parser]") {
             REQUIRE(parse_result.has_value());
             CHECK(parse_result.value().diagnostics.size() == 1); // TODO: The success state should not result in diagnostics
             auto n = std::move(parse_result.value().ntta);
-            std::cout << *n << std::endl;
+            std::cout << n << std::endl;
             THEN("three TTAs are constructed (Main, fischer1, and fischer2)") {
-                REQUIRE(n->components.size() == 3);
+                REQUIRE(n.components.size() == 3);
             }
         }
     }
@@ -47,9 +47,9 @@ SCENARIO("parsing fischer-n suite", "[hawk_parser]") {
             REQUIRE(parse_result.has_value());
             CHECK(parse_result.value().diagnostics.size() == 4); // TODO: The success state should not result in diagnostics
             auto n = std::move(parse_result.value().ntta);
-            std::cout << *n << std::endl;
+            std::cout << n << std::endl;
             THEN("six TTAs are constructed (fischer instances + main)") {
-                REQUIRE(n->components.size() == 6);
+                REQUIRE(n.components.size() == 6);
             }
         }
     }
@@ -60,9 +60,9 @@ SCENARIO("parsing fischer-n suite", "[hawk_parser]") {
             CHECK(parse_result.value().diagnostics.size() == 9); // TODO: The success state should not result in diagnostics
             REQUIRE(parse_result.has_value());
             auto n = std::move(parse_result.value().ntta);
-            std::cout << *n << std::endl;
+            std::cout << n << std::endl;
             THEN("eleven TTAs are constructed (fischer instances + main)") {
-                REQUIRE(n->components.size() == 11);
+                REQUIRE(n.components.size() == 11);
             }
         }
     }

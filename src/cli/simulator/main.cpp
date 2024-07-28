@@ -126,9 +126,9 @@ int main(int argc, char** argv) {
 
     /// Inject tockers - CLI Format: "name(argument)"
     for(auto& arg : tockers) {
-        auto tocker = instantiate_tocker(arg, available_plugins, *automata);
+        auto tocker = instantiate_tocker(arg, available_plugins, automata);
         if(tocker.has_value())
-            automata->tockers.emplace_back(std::move(tocker.value()));
+            automata.tockers.emplace_back(std::move(tocker.value()));
     }
 
     /// Run
@@ -141,15 +141,15 @@ int main(int argc, char** argv) {
         for (; i < ticks || ticks < 0; i++) {
             if(spdlog::get_level() <= spdlog::level::trace) {
                 std::stringstream ss{};
-                ss << "state:\n" << *automata;
+                ss << "state:\n" << automata;
                 spdlog::trace(ss.str());
             }
-            auto tock_changes = automata->tock();
+            auto tock_changes = automata.tock();
             if(!tock_changes.empty())
-                automata->apply(tock_changes[0]);
-            auto tick_changes = automata->tick();
+                automata.apply(tock_changes[0]);
+            auto tick_changes = automata.tick();
             if(!tick_changes.empty())
-                automata->apply(tick_changes[0]);
+                automata.apply(tick_changes[0]);
         }
 #ifdef NDEBUG
     } catch (std::exception& e) {

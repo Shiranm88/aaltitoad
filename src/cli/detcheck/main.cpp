@@ -24,8 +24,8 @@
 #include <plugin_system/plugin_system.h>
 #include <timer>
 
-auto get_ntta(const std::vector<std::string>& plugin_dirs, const std::vector<std::string>& ignore_list, const std::string& parser, const std::vector<std::string>& input) -> std::unique_ptr<aaltitoad::ntta_t>;
-void find_deadlocks(const std::unique_ptr<aaltitoad::ntta_t>& ntta, const std::vector<std::string>& conditions, const std::optional<std::string>& condition_file, const std::vector<std::string> knowns, const std::optional<std::string>& known_file, const std::vector<std::string>& instance, const std::optional<std::string>& instance_file);
+auto get_ntta(const std::vector<std::string>& plugin_dirs, const std::vector<std::string>& ignore_list, const std::string& parser, const std::vector<std::string>& input) -> aaltitoad::ntta_t;
+void find_deadlocks(const aaltitoad::ntta_t& ntta, const std::vector<std::string>& conditions, const std::optional<std::string>& condition_file, const std::vector<std::string> knowns, const std::optional<std::string>& known_file, const std::vector<std::string>& instance, const std::optional<std::string>& instance_file);
 
 int main(int argc, char** argv) {
     bool show_help = false;
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
 
     auto automata = get_ntta(plugin_dirs, ignore, parser, input);
     if(list_instances) {
-        for(auto& c: automata->components)
+        for(auto& c: automata.components)
             std::cout << c.first << " ";
         std::cout << std::endl;
         return 0;
@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-auto get_ntta(const std::vector<std::string>& plugin_dirs, const std::vector<std::string>& ignore_list, const std::string& parser, const std::vector<std::string>& input) -> std::unique_ptr<aaltitoad::ntta_t> {
+auto get_ntta(const std::vector<std::string>& plugin_dirs, const std::vector<std::string>& ignore_list, const std::string& parser, const std::vector<std::string>& input) -> aaltitoad::ntta_t {
     /// Load plugins
     auto available_plugins = aaltitoad::plugins::load(plugin_dirs);
 
@@ -124,9 +124,8 @@ auto get_ntta(const std::vector<std::string>& plugin_dirs, const std::vector<std
     aaltitoad::warnings::print_warnings(parse_result);
     if(!parse_result.has_value())
         throw std::logic_error("compilation failed");
-    auto automata = std::move(parse_result.value().ntta);
     spdlog::trace("model parsing took {0}ms", t.milliseconds_elapsed());
-    return automata;
+    return parse_result.value().ntta;
 }
 
 auto get_mentioned_symbols(const expr::syntax_tree_t& expression, const expr::symbol_table_t& symbols) -> expr::symbol_table_t {
@@ -149,9 +148,9 @@ auto get_mentioned_symbols(const expr::syntax_tree_t& expression, const expr::sy
     return mentioned;
 }
 
-void find_deadlocks(const std::unique_ptr<aaltitoad::ntta_t>& ntta, const std::vector<std::string>& conditions, const std::optional<std::string>& condition_file, const std::vector<std::string> knowns, const std::optional<std::string>& known_file, const std::vector<std::string>& instance, const std::optional<std::string>& instance_file) {
+void find_deadlocks(const aaltitoad::ntta_t& ntta, const std::vector<std::string>& conditions, const std::optional<std::string>& condition_file, const std::vector<std::string> knowns, const std::optional<std::string>& known_file, const std::vector<std::string>& instance, const std::optional<std::string>& instance_file) {
     ya::timer<unsigned int> t{};
-    aaltitoad::expression_driver c{ntta->symbols, ntta->external_symbols};
+    aaltitoad::expression_driver c{ntta.symbols, ntta.external_symbols};
     std::vector<expr::syntax_tree_t> extra_conditions{};
     for(auto& condition : conditions) {
         auto result = c.parse(condition);
@@ -196,9 +195,9 @@ void find_deadlocks(const std::unique_ptr<aaltitoad::ntta_t>& ntta, const std::v
     }
     for(auto& instance: instances) {
         spdlog::trace("looking for '{0}' in components", instance);
-        for(auto& location: ntta->components.at(instance).graph->nodes)
+        for(auto& location: ntta.components.at(instance).graph->nodes)
             for(auto& edge: location.second.outgoing_edges)
-                unknown_symbols += get_mentioned_symbols(edge->second.data.guard, ntta->symbols + ntta->external_symbols);
+                unknown_symbols += get_mentioned_symbols(edge->second.data.guard, ntta.symbols + ntta.external_symbols);
     }
     spdlog::trace("finding {0} mentioned symbols in {1} tta instances took {2}ms", unknown_symbols.size(), instances.size(), t.milliseconds_elapsed());
 
@@ -209,7 +208,7 @@ void find_deadlocks(const std::unique_ptr<aaltitoad::ntta_t>& ntta, const std::v
     aaltitoad::expression_driver d{known_symbols, unknown_symbols};
     for(auto& instance : instances) {
         spdlog::trace("looking for '{0}' in components", instance);
-        for(auto& location : ntta->components.at(instance).graph->nodes) {
+        for(auto& location : ntta.components.at(instance).graph->nodes) {
             t.start();
             if(location.second.outgoing_edges.empty())
                 continue;

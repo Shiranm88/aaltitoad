@@ -1,3 +1,20 @@
+/**
+ * aaltitoad - a verification engine for tick tock automata models
+   Copyright (C) 2023 Asger Gitz-Johansen
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 #include "compiler.h"
 #include <overload>
 
@@ -12,17 +29,17 @@ namespace aaltitoad::hawk {
     }
 
     compiler::compiler(
-            std::unique_ptr<scanner>&& _scanner,
-            std::unique_ptr<parser>&& _parser,
-            std::unique_ptr<semantic_analyzer>&& _analyzer,
-            std::unique_ptr<optimizer>&& _optimizer,
-            std::unique_ptr<generator>&& _generator)
+            scanner& _scanner,
+            parser& _parser,
+            semantic_analyzer& _analyzer,
+            optimizer& _optimizer,
+            generator& _generator)
         : 
-            _scanner{std::move(_scanner)},
-            _parser{std::move(_parser)},
-            _analyzer{std::move(_analyzer)},
-            _optimizer{std::move(_optimizer)},
-            _generator{std::move(_generator)},
+            _scanner{_scanner},
+            _parser{_parser},
+            _analyzer{_analyzer},
+            _optimizer{_optimizer},
+            _generator{_generator},
             symbols{},
             _diagnostic_factory{} {
     }
@@ -36,18 +53,18 @@ namespace aaltitoad::hawk {
     }
 
     auto compiler::compile(const std::vector<std::string>& paths, const std::vector<std::string>& ignore_list) -> std::expected<ok, error_t> {
-        auto stream = _scanner->scan(*this, paths, ignore_list);
+        auto stream = _scanner.scan(*this, paths, ignore_list);
         if(!stream)
             return std::unexpected{stream.error()};
-        auto ast = _parser->parse(*this, stream.value());
+        auto ast = _parser.parse(*this, stream.value());
         if(!ast)
             return std::unexpected{ast.error()};
-        auto dast_r = _analyzer->analyze(*this, ast.value());
+        auto dast_r = _analyzer.analyze(*this, ast.value());
         if(!dast_r)
             return std::unexpected{dast_r.error()};
         auto dast = dast_r.value();
-        _optimizer->optimize(*this, dast);
-        auto ntta = _generator->generate(*this, dast);
+        _optimizer.optimize(*this, dast);
+        auto ntta = _generator.generate(*this, dast);
         if(!ntta)
             return std::unexpected(ntta.error());
         return ok{
@@ -67,4 +84,8 @@ namespace aaltitoad::hawk {
     error_t::error_t() : diagnostics{} {}
 
     error_t::error_t(const std::vector<Diagnostic>& diagnostics) : diagnostics{diagnostics} {}
+
+    void nothing_optimizer::optimize(compiler& ctx, parser::ok& ast) const {
+        
+    }
 }

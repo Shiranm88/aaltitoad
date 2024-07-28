@@ -24,7 +24,7 @@
 namespace aaltitoad::hawk::huppaal {
     auto create_parser() -> plugin::parser*;
 
-    class huppaal_scanner : public aaltitoad::hawk::scanner{
+    class huppaal_scanner : public aaltitoad::hawk::scanner {
     public:
         ~huppaal_scanner() override = default;
         auto scan(compiler& ctx,
@@ -41,14 +41,31 @@ namespace aaltitoad::hawk::huppaal {
         auto parse(compiler& ctx, const scanner::ok& stream) const noexcept -> std::expected<parser::ok, error_t> override;
     };
 
+    class huppaal_semantic_analyzer : public aaltitoad::hawk::semantic_analyzer {
+    public:
+        ~huppaal_semantic_analyzer() override = default;
+        auto analyze(compiler& ctx, const parser::ok& ast) const noexcept -> std::expected<parser::ok, error_t> override;
+    };
+
+    class huppaal_generator : public aaltitoad::hawk::generator {
+    public:
+        ~huppaal_generator() override = default;
+        auto generate(compiler& ctx, const parser::ok& ast) const noexcept -> std::expected<ntta_t, error_t> override;
+    };
+
     class parser : public plugin::parser {
     public:
-        parser();
         ~parser() override = default;
         auto parse_files(const std::vector<std::string>& files, const std::vector<std::string>& ignore_patterns) -> plugin::parse_result override;
         auto parse_model(const Buffer& buffer) -> plugin::parse_result override;
     private:
-        std::unique_ptr<compiler> compiler;
+        auto create_compiler() -> compiler;
+
+        huppaal_scanner _scanner;
+        huppaal_parser _parser;
+        huppaal_semantic_analyzer _semantic_analyzer;
+        nothing_optimizer _optimizer;
+        huppaal_generator _generator;
     };
 }
 

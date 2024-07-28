@@ -2,7 +2,6 @@
 #define AALTITOAD_PARSER_H
 #include "lsp.pb.h"
 #include "ntta/tta.h"
-#include <memory>
 #include <expected>
 
 namespace aaltitoad::plugin {
